@@ -21,6 +21,8 @@
     </script>
     <!-- SheetJS untuk Ekspor ke Excel (.xlsx) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- HTML5 QR Code Scanner Library untuk Scan via Kamera HP -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -105,17 +107,18 @@
                 </button>
             </div>
 
-            <!-- Widget Grafik Pie / Donut Style -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Widget Grafik Kategori & Ranking Best Seller 1-5 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Donut Chart -->
                 <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
                     <div>
                         <h3 class="font-bold text-base">Distribusi Kategori Produk</h3>
                         <p class="text-xs text-slate-500">Proporsi omset berdasarkan kategori</p>
                     </div>
-                    <div class="flex items-center justify-center py-4">
-                        <div class="relative w-40 h-40 rounded-full flex items-center justify-center shadow-inner" id="donut-chart-container" style="background: conic-gradient(#3B82F6 0deg 120deg, #6366F1 120deg 240deg, #10B981 240deg 360deg);">
-                            <div class="absolute w-28 h-28 bg-white dark:bg-slate-900 rounded-full flex flex-col items-center justify-center shadow-sm">
-                                <span class="text-[10px] uppercase text-slate-400 font-bold">Total</span>
+                    <div class="flex items-center justify-center py-2">
+                        <div class="relative w-36 h-36 rounded-full flex items-center justify-center shadow-inner" id="donut-chart-container" style="background: conic-gradient(#3B82F6 0deg 120deg, #6366F1 120deg 240deg, #10B981 240deg 360deg);">
+                            <div class="absolute w-24 h-24 bg-white dark:bg-slate-900 rounded-full flex flex-col items-center justify-center shadow-sm">
+                                <span class="text-[9px] uppercase text-slate-400 font-bold">Total</span>
                                 <span id="donut-total-text" class="text-xs font-extrabold text-slate-800 dark:text-slate-100">Rp 0</span>
                             </div>
                         </div>
@@ -127,21 +130,14 @@
                     </div>
                 </div>
 
-                <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                <!-- Grafik Ranking Best Seller 1 s/d 5 -->
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-3">
                     <div>
-                        <h3 class="font-bold text-base mb-1">Produk Unggulan (Best Seller)</h3>
-                        <p class="text-xs text-slate-500">Paling sering dibeli pelanggan</p>
-                        <div class="mt-6 flex items-center space-x-4">
-                            <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xl">🔥</div>
-                            <div>
-                                <h4 id="dash-bestseller" class="font-bold text-base">-</h4>
-                                <p class="text-xs text-slate-400 mt-0.5">Top performing item</p>
-                            </div>
-                        </div>
+                        <h3 class="font-bold text-base">🔥 Top 5 Produk Terlaris (Best Seller)</h3>
+                        <p class="text-xs text-slate-500">Peringkat produk berdasarkan volume penjualan</p>
                     </div>
-                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs">
-                        <span class="text-slate-500">Status Sistem Offline</span>
-                        <span class="font-bold text-emerald-500">Aman & Terenkripsi Lokal</span>
+                    <div id="bestseller-ranking-list" class="space-y-2.5 pt-1">
+                        <!-- List Best Seller 1-5 dirender via JS -->
                     </div>
                 </div>
             </div>
@@ -150,8 +146,12 @@
         <!-- 2. TAB KASIR (POS) -->
         <section id="tab-content-pos" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div class="lg:col-span-2 space-y-4">
-                <div class="flex space-x-3">
-                    <input type="text" id="search-product" oninput="filterProducts()" placeholder="Cari nama barang atau scan barcode..." class="flex-1 px-4 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm shadow-sm">
+                <div class="flex space-x-2">
+                    <input type="text" id="search-product" oninput="filterProducts()" placeholder="Cari nama barang atau ketik barcode..." class="flex-1 px-4 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm shadow-sm">
+                    <!-- Tombol Buka Kamera Scanner -->
+                    <button onclick="openCameraScanner('pos')" class="px-4 py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-brand-500/20 transition whitespace-nowrap">
+                        <span>📷 Scan Kamera</span>
+                    </button>
                 </div>
                 <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
             </div>
@@ -187,15 +187,18 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h2 class="font-bold text-base">Manajemen Produk & Stok Gudang</h2>
-                    <p class="text-xs text-slate-500">Kontrol harga beli, harga jual, dan persediaan (Bisa Scan Barcode)</p>
+                    <p class="text-xs text-slate-500">Kontrol harga beli, harga jual, dan persediaan</p>
                 </div>
                 <button onclick="openAddProductModal()" class="px-4 py-2.5 bg-brand-600 text-white font-bold rounded-2xl text-xs shadow-md shadow-brand-500/20">Tambah Produk</button>
             </div>
-            <!-- Fitur Input Scan Barcode untuk Update Harga Cepat -->
-            <div class="pt-2">
-                <input type="text" id="scan-barcode-input" placeholder="💡 Klik di sini lalu scan barcode barang untuk update harga otomatis..." 
-                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-medium"
+            <!-- Input Scan Barcode / Tombol Kamera untuk Update Harga & Stok Cepat -->
+            <div class="flex space-x-2 pt-2">
+                <input type="text" id="scan-barcode-input" placeholder="💡 Ketik kode barcode atau gunakan tombol scan kamera di sebelah..." 
+                    class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-medium"
                     onchange="handleBarcodeScan(this.value)">
+                <button onclick="openCameraScanner('inventory')" class="px-4 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-indigo-500/20 transition whitespace-nowrap">
+                    <span>📷 Scan Kamera</span>
+                </button>
             </div>
             <div class="overflow-x-auto pt-2">
                 <table class="w-full text-left text-sm">
@@ -203,7 +206,7 @@
                         <tr>
                             <th class="p-3.5 rounded-l-xl">Nama Produk</th>
                             <th class="p-3.5">Kategori</th>
-                            <th class="p-3.5">Harga Modal</th>
+                            <th class="p-3.5">Barcode / Kode</th>
                             <th class="p-3.5">Harga Jual</th>
                             <th class="p-3.5">Stok</th>
                             <th class="p-3.5 rounded-r-xl">Aksi</th>
@@ -300,6 +303,18 @@
 
     </main>
 
+    <!-- MODAL SCANNER KAMERA HP -->
+    <div id="scanner-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-md w-full space-y-4 text-center">
+            <div class="flex justify-between items-center">
+                <h3 class="font-bold text-base">Arahkan Kamera ke Barcode</h3>
+                <button onclick="closeCameraScanner()" class="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 font-bold text-xs">✕</button>
+            </div>
+            <div id="reader" class="w-full overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800"></div>
+            <p class="text-xs text-slate-400">Pastikan pencahayaan cukup agar barcode terbaca otomatis.</p>
+        </div>
+    </div>
+
     <!-- POPUP MODAL KONFIRMASI CETAK STRUK -->
     <div id="receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
         <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-sm w-full text-center space-y-4">
@@ -318,16 +333,18 @@
     <!-- JavaScript Logika Lengkap -->
     <script>
         let products = JSON.parse(localStorage.getItem('warung_products')) || [
-            { id: 1, name: "Minyak Goreng 1L", buyPrice: 16000, price: 18500, stock: 25, category: "Sembako" },
-            { id: 2, name: "Beras Premium 5kg", buyPrice: 60000, price: 68000, stock: 10, category: "Sembako" },
-            { id: 3, name: "Telur Ayam 1kg", buyPrice: 24000, price: 28000, stock: 15, category: "Sembako" },
-            { id: 4, name: "Indomie Goreng (Dus)", buyPrice: 105000, price: 115000, stock: 8, category: "Makanan" },
-            { id: 5, name: "Kopi Sachet", buyPrice: 1200, price: 1500, stock: 100, category: "Minuman" }
+            { id: 1, name: "Minyak Goreng 1L", barcode: "8991001", buyPrice: 16000, price: 18500, stock: 25, category: "Sembako" },
+            { id: 2, name: "Beras Premium 5kg", barcode: "8991002", buyPrice: 60000, price: 68000, stock: 10, category: "Sembako" },
+            { id: 3, name: "Telur Ayam 1kg", barcode: "8991003", buyPrice: 24000, price: 28000, stock: 15, category: "Sembako" },
+            { id: 4, name: "Indomie Goreng (Dus)", barcode: "8991004", buyPrice: 105000, price: 115000, stock: 8, category: "Makanan" },
+            { id: 5, name: "Kopi Sachet", barcode: "8991005", buyPrice: 1200, price: 1500, stock: 100, category: "Minuman" }
         ];
 
         let cart = [];
         let transactions = JSON.parse(localStorage.getItem('warung_transactions')) || [];
         let hutangList = JSON.parse(localStorage.getItem('warung_hutang')) || [];
+        let activeScannerMode = 'pos'; // 'pos' atau 'inventory'
+        let html5QrCode = null;
 
         window.onload = function() {
             renderDashboard();
@@ -361,6 +378,7 @@
             let totalOmset = 0;
             let totalProfit = 0;
             let catTotals = { Sembako: 0, Makanan: 0, Minuman: 0 };
+            let productSalesCount = {};
 
             transactions.forEach(t => {
                 totalOmset += t.total;
@@ -371,6 +389,7 @@
                     } else {
                         catTotals.Sembako += (i.price * i.qty);
                     }
+                    productSalesCount[i.name] = (productSalesCount[i.name] || 0) + i.qty;
                 });
             });
 
@@ -378,20 +397,33 @@
             document.getElementById('dash-trx').innerText = `${transactions.length} Trx`;
             document.getElementById('dash-profit').innerText = `Rp ${totalProfit.toLocaleString('id-ID')}`;
             document.getElementById('donut-total-text').innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
-            
-            if(transactions.length > 0) {
-                document.getElementById('dash-bestseller').innerText = transactions[0].items[0]?.name || '-';
-            }
 
+            // Render Donut Chart
             let maxCat = Math.max(totalOmset, 1);
             let degSembako = (catTotals.Sembako / maxCat) * 360;
             let degMakanan = degSembako + ((catTotals.Makanan / maxCat) * 360);
-            
-            let gradientCSS = `conic-gradient(#3B82F6 0deg ${degSembako}deg, #6366F1 ${degSembako}deg ${degMakanan}deg, #10B981 ${degMakanan}deg 360deg)`;
-            if(totalOmset === 0) {
-                gradientCSS = `conic-gradient(#cbd5e1 0deg 360deg)`;
-            }
+            let gradientCSS = totalOmset === 0 ? `conic-gradient(#cbd5e1 0deg 360deg)` : `conic-gradient(#3B82F6 0deg ${degSembako}deg, #6366F1 ${degSembako}deg ${degMakanan}deg, #10B981 ${degMakanan}deg 360deg)`;
             document.getElementById('donut-chart-container').style.background = gradientCSS;
+
+            // Render Ranking Best Seller 1 s/d 5
+            let sortedProducts = Object.keys(productSalesCount).map(name => ({
+                name: name, count: productSalesCount[name]
+            })).sort((a, b) => b.count - a.count).slice(0, 5);
+
+            const rankingContainer = document.getElementById('bestseller-ranking-list');
+            if (sortedProducts.length === 0) {
+                rankingContainer.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data penjualan hari ini.</p>`;
+            } else {
+                rankingContainer.innerHTML = sortedProducts.map((p, idx) => `
+                    <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                        <div class="flex items-center space-x-3">
+                            <span class="w-6 h-6 rounded-full bg-brand-500/10 text-brand-500 font-bold text-xs flex items-center justify-center">${idx + 1}</span>
+                            <span class="font-semibold text-xs">${p.name}</span>
+                        </div>
+                        <span class="text-xs font-bold text-emerald-500">${p.count} Terjual</span>
+                    </div>
+                `).join('');
+            }
         }
 
         function renderProducts(items) {
@@ -412,13 +444,19 @@
 
         function filterProducts() {
             const query = document.getElementById('search-product').value.toLowerCase();
-            const filtered = products.filter(p => p.name.toLowerCase().includes(query));
+            const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.barcode === query);
             renderProducts(filtered);
+            
+            // Jika ada yang cocok persis dengan barcode saat mengetik/scan hardware, otomatis masukkan ke keranjang
+            if (filtered.length === 1 && filtered[0].barcode === query) {
+                addToCart(filtered[0].id);
+                document.getElementById('search-product').value = '';
+            }
         }
 
         function addToCart(id) {
             const product = products.find(p => p.id === id);
-            if(product.stock <= 0) { alert("Stok barang habis!"); return; }
+            if(!product || product.stock <= 0) { alert("Stok barang habis!"); return; }
             const existing = cart.find(item => item.id === id);
             if (existing) {
                 if(existing.qty >= product.stock) { alert("Stok tidak mencukupi!"); return; }
@@ -494,7 +532,6 @@
             renderProducts(products);
             renderDashboard();
 
-            // Munculkan Popup Konfirmasi Cetak Struk
             document.getElementById('receipt-modal').classList.remove('hidden');
         }
 
@@ -511,7 +548,7 @@
                 <tr class="border-b border-slate-100 dark:border-slate-800/60">
                     <td class="p-3.5 font-medium">${p.name}</td>
                     <td class="p-3.5"><span class="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 rounded-md text-xs">${p.category}</span></td>
-                    <td class="p-3.5">Rp ${p.buyPrice.toLocaleString('id-ID')}</td>
+                    <td class="p-3.5 font-mono text-xs text-brand-500">${p.barcode || '-'}</td>
                     <td class="p-3.5 font-semibold text-brand-500">Rp ${p.price.toLocaleString('id-ID')}</td>
                     <td class="p-3.5 font-bold">${p.stock}</td>
                     <td class="p-3.5"><button onclick="restock(${p.id})" class="text-xs px-3 py-1.5 bg-brand-500/10 text-brand-500 rounded-xl font-bold hover:bg-brand-500/20 transition">Tambah Stok</button></td>
@@ -519,25 +556,69 @@
             `).join('');
         }
 
-        // Fungsi Scan Barcode untuk Update Harga Cepat
+        // Handler Scan Barcode untuk Update Harga / Pilih Barang
         function handleBarcodeScan(barcodeValue) {
-            const product = products.find(p => p.id == barcodeValue || p.name.toLowerCase().includes(barcodeValue.toLowerCase()));
+            const product = products.find(p => p.barcode === barcodeValue || p.id == barcodeValue);
             if (!product) {
-                alert("Barang tidak ditemukan berdasarkan kode/nama tersebut!");
+                alert(`Barang dengan kode "${barcodeValue}" tidak ditemukan!`);
                 document.getElementById('scan-barcode-input').value = '';
                 return;
             }
 
-            const action = prompt(`Ditemukan: ${product.name}\nHarga Jual Saat Ini: Rp ${product.price.toLocaleString('id-ID')}\n\nMasukkan harga jual BARU untuk update otomatis:`, product.price);
-            if (action !== null && !isNaN(action) && action.trim() !== '') {
-                product.price = parseInt(action);
-                localStorage.setItem('warung_products', JSON.stringify(products));
-                alert(`Harga berhasil di-update menjadi: Rp ${product.price.toLocaleString('id-ID')}`);
-                renderInventory();
-                renderProducts(products);
+            if (activeScannerMode === 'pos') {
+                addToCart(product.id);
+            } else {
+                const action = prompt(`Ditemukan: ${product.name}\nHarga Saat Ini: Rp ${product.price.toLocaleString('id-ID')}\n\nMasukkan harga jual BARU:`, product.price);
+                if (action !== null && !isNaN(action) && action.trim() !== '') {
+                    product.price = parseInt(action);
+                    localStorage.setItem('warung_products', JSON.stringify(products));
+                    alert(`Harga ${product.name} berhasil diupdate!`);
+                    renderInventory();
+                    renderProducts(products);
+                }
             }
             document.getElementById('scan-barcode-input').value = '';
-            document.getElementById('scan-barcode-input').focus();
+        }
+
+        // Buka Kamera untuk Scan Barcode via HP / Webcam
+        function openCameraScanner(mode) {
+            activeScannerMode = mode;
+            document.getElementById('scanner-modal').classList.remove('hidden');
+            
+            html5QrCode = new Html5Qrcode("reader");
+            html5QrCode.start(
+                { facingMode: "environment" },
+                { fps: 10, qrbox: { width: 250, height: 150 } },
+                (decodedText) => {
+                    // Berhasil scan barcode
+                    closeCameraScanner();
+                    if (activeScannerMode === 'pos') {
+                        const prod = products.find(p => p.barcode === decodedText || p.id == decodedText);
+                        if (prod) {
+                            addToCart(prod.id);
+                        } else {
+                            alert(`Barcode ${decodedText} tidak terdaftar di sistem!`);
+                        }
+                    } else {
+                        handleBarcodeScan(decodedText);
+                    }
+                },
+                (errorMessage) => {
+                    // Error scanning frame (diabaikan agar terus scan)
+                }
+            ).catch((err) => {
+                alert("Gagal membuka kamera. Pastikan izin kamera diaktifkan.");
+                closeCameraScanner();
+            });
+        }
+
+        function closeCameraScanner() {
+            if (html5QrCode) {
+                html5QrCode.stop().then(() => {
+                    html5QrCode.clear();
+                }).catch(err => console.log(err));
+            }
+            document.getElementById('scanner-modal').classList.add('hidden');
         }
 
         function restock(id) {
@@ -553,12 +634,13 @@
 
         function openAddProductModal() {
             const name = prompt("Nama Produk:");
+            const bc = prompt("Kode Barcode (Contoh: 8991006):", "8991" + Math.floor(100+Math.random()*900));
             const cat = prompt("Kategori (Sembako/Makanan/Minuman):", "Sembako");
             const buy = parseInt(prompt("Harga Modal (Beli):", "10000"));
             const sell = parseInt(prompt("Harga Jual:", "12000"));
             const st = parseInt(prompt("Stok Awal:", "20"));
             if(name && sell) {
-                products.push({ id: Date.now(), name, category: cat || 'Sembako', buyPrice: buy, price: sell, stock: st });
+                products.push({ id: Date.now(), barcode: bc, name, category: cat || 'Sembako', buyPrice: buy, price: sell, stock: st });
                 localStorage.setItem('warung_products', JSON.stringify(products));
                 renderInventory();
                 renderProducts(products);
