@@ -1,0 +1,7 @@
+{
+  "name": "kontenin-ai",
+  "version": "2.7.0",
+  "dependencies": {
+    "@google/genai": "^0.1.1"
+  }
+}
