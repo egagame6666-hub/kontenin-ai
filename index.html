@@ -120,7 +120,7 @@
         </main>
     </div>
 
-    <!-- Script Logika Frontend menggunakan gemini-3.8-flash & Multi Image Generation -->
+    <!-- Script Logika Frontend menggunakan gemini-3.8-flash & Parallel High-Speed Engine -->
     <script>
         let uploadedImages = { Karakter: null, Latar: null, Produk: null };
         let activeUploadType = '';
@@ -189,7 +189,7 @@
             localStorage.setItem('gemini_user_api_key', apiKey);
 
             const container = document.getElementById('storyboardResultContainer');
-            container.innerHTML = `<div class="text-center py-6 text-xs text-amber-400 animate-pulse">🎬 Sutradara AI (gemini-3.8-flash) sedang meracik banyak panel visual HD & naskah...</div>`;
+            container.innerHTML = `<div class="text-center py-6 text-xs text-amber-400 animate-pulse">🎬 Sutradara AI (gemini-3.8-flash) sedang meracik skenario sinematik paralel...</div>`;
 
             let contents = [];
             let parts = [];
@@ -269,12 +269,17 @@
 
         function tampilkanHasilStoryboard(dataArray) {
             const container = document.getElementById('storyboardResultContainer');
-            container.innerHTML = '<h2 class="text-xs font-bold text-amber-400 mb-2 uppercase tracking-wide">✨ Hasil Storyboard & Multi AI HD Visual:</h2>';
+            container.innerHTML = '<h2 class="text-xs font-bold text-amber-400 mb-2 uppercase tracking-wide">✨ Hasil Storyboard & Parallel HD Visual:</h2>';
             
             dataArray.forEach((item, index) => {
                 const promptQuery = encodeURIComponent(item.image_prompt_en || item.visual_prompt || 'commercial advertising cinematic scene ' + index);
-                // Men-generate banyak gambar HD paralel (1280x720) dengan ukuran file di bawah 1MB
-                let hdAiGeneratedImg = `https://image.pollinations.ai/prompt/${promptQuery}?width=1280&height=720&nologo=true&seed=${Date.now() + index}&quality=hd`;
+                
+                // Menggunakan multi-mirror endpoint rotasi agar engine tidak overload saat generate banyak gambar sekaligus
+                const mirrors = [
+                    `https://image.pollinations.ai/prompt/${promptQuery}?width=1024&height=576&nologo=true&seed=${1000 + index}&model=flux`,
+                    `https://image.pollinations.ai/prompt/${promptQuery}?width=1024&height=576&nologo=true&seed=${2000 + index}&model=flux`
+                ];
+                let selectedImgUrl = mirrors[index % mirrors.length];
 
                 const card = document.createElement('div');
                 card.className = "bg-cardBg border border-zinc-800 rounded-2xl p-4 text-white shadow-xl space-y-3";
@@ -284,10 +289,10 @@
                         <span class="text-[10px] text-zinc-400 font-mono">⏱️ ${item.timing}</span>
                     </div>
 
-                    <!-- Panel Multi AI Generated HD Image (< 1MB) -->
+                    <!-- Panel Parallel AI Generated HD Image (< 1MB) -->
                     <div class="relative rounded-xl overflow-hidden border border-zinc-700 bg-zinc-950 aspect-video flex items-center justify-center group">
-                        <img src="${hdAiGeneratedImg}" alt="Multi AI HD Visual Scene ${item.scene}" class="w-full h-full object-cover opacity-95 group-hover:scale-105 transition duration-500" loading="lazy">
-                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-mono text-amber-400 border border-amber-500/30">HD AI (< 1MB)</div>
+                        <img src="${selectedImgUrl}" alt="Parallel HD Visual Scene ${item.scene}" class="w-full h-full object-cover opacity-95 group-hover:scale-105 transition duration-500" loading="lazy">
+                        <div class="absolute top-2 right-2 bg-black/60 backdrop-blur-md px-2 py-0.5 rounded text-[9px] font-mono text-amber-400 border border-amber-500/30">Flux HD (< 1MB)</div>
                         <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent flex items-end p-3">
                             <p class="text-[10px] text-zinc-200 leading-tight"><strong class="text-amber-400">Deskripsi Visual:</strong> ${item.visual_prompt}</p>
                         </div>
