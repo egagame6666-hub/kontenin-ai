@@ -1,7 +1,4 @@
-const { GoogleGenAI } = require('@google/genai');
-
-module.exports = async function handler(req, res) {
-    // Izinkan CORS agar bisa diakses dari frontend
+export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,GET');
@@ -19,13 +16,13 @@ module.exports = async function handler(req, res) {
     try {
         const apiKey = process.env.GEMINI_API_KEY;
         if (!apiKey) {
-            return res.status(500).json({ error: 'API Key belum diset di Environment Variables Vercel.' });
+            return res.status(500).json({ error: 'API Key belum diatur di Environment Variables Vercel.' });
         }
 
-        const ai = new GoogleGenAI({ apiKey: apiKey });
         const { text, count, durationTotal, voStyle, mainCategory, images } = req.body;
 
-        let contents = [];
+        // Siapkan bagian parts untuk Gemini API (mendukung teks dan gambar base64)
+        let parts = [];
 
         if (images) {
             for (let key in images) {
@@ -33,17 +30,17 @@ module.exports = async function handler(req, res) {
                     const base64Data = images[key].split(';base64,').pop();
                     const mimeType = images[key].split(';')[0].replace('data:', '');
                     
-                    contents.push({
+                    parts.push({
                         inlineData: {
-                            data: base64Data,
-                            mimeType: mimeType
+                            mimeType: mimeType,
+                            data: base64Data
                         }
                     });
                 }
             }
         }
 
-        const prompt = `
+        const promptText = `
             Bertindaklah sebagai Sutradara AI dan Copywriting Profesional untuk konten ${mainCategory}.
             Buatkan ${count} scene storyboard video berdurasi total ${durationTotal} detik berdasarkan ide berikut: "${text}".
             Gaya bahasa Voiceover (VO) menggunakan nada: ${voStyle}.
@@ -59,21 +56,34 @@ module.exports = async function handler(req, res) {
             ]
         `;
 
-        contents.push(prompt);
+        parts.push({ text: promptText });
 
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: contents,
+        // Menggunakan endpoint resmi Gemini API secara langsung via fetch (Tanpa kendala modul NPM)
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{ parts: parts }]
+            })
         });
 
-        const rawText = response.text.trim();
+        const data = await geminiResponse.json();
+
+        if (data.error) {
+            console.error("Gemini API Error:", data.error);
+            return res.status(500).json({ error: data.error.message || 'Gagal dari server Gemini.' });
+        }
+
+        const rawText = data.candidates[0].content.parts[0].text.trim();
         const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
         const storyboardArray = JSON.parse(cleanJsonText);
 
         return res.status(200).json({ success: true, data: storyboardArray });
 
-    } catch (error) {
-        console.error("API Error:", error);
-        return res.status(500).json({ error: error.message || 'Gagal memproses AI generator.' });
+    } async (error) {
+        console.error("Server Error:", error);
+        return res.status(500).json({ error: 'Gagal memproses AI generator di server.' });
     }
-};
+}
