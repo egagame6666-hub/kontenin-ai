@@ -3,10 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kontenin AI v2.7 Pro - Storyboard & AI Generator</title>
-    <!-- Tailwind CSS untuk Desain Minimalis -->
+    <title>Kontenin AI - Storyboard & AI Generator</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <!-- FontAwesome untuk Ikon -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col">
@@ -19,7 +17,7 @@
             </div>
             <div>
                 <h1 class="font-bold text-lg leading-tight">Kontenin AI</h1>
-                <span class="text-xs text-indigo-400">v2.7 Pro Commercial</span>
+                <span class="text-xs text-indigo-400">Storyboard & Scene Generator</span>
             </div>
         </div>
         <div class="flex items-center space-x-3">
@@ -35,19 +33,31 @@
     <!-- Konten Utama -->
     <main class="flex-1 max-w-2xl w-full mx-auto p-4 pb-24 space-y-6">
         
-        <!-- Kotak Ide / Input Utama -->
+        <!-- Kotak Form Input -->
         <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-4">
+            
+            <!-- Pilihan Kategori Konten -->
             <div>
-                <label class="block text-sm font-medium text-slate-300 mb-1">Ide Konten / Produk</label>
-                <textarea id="sbInput" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-sm" placeholder="Contoh: Jualan kaos polos aesthetic anti bau dengan latar kafe..."></textarea>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Kategori Konten</label>
+                <select id="mainCategory" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-sm">
+                    <option value="Affiliate TikTok/Shopee">Affiliate TikTok / Shopee</option>
+                    <option value="Iklan Produk / Commercial">Iklan Produk / Commercial</option>
+                    <option value="Animasi & Cerita Pendek">Animasi & Cerita Pendek</option>
+                    <option value="Review & Drama Pendek">Review & Drama Pendek</option>
+                </select>
             </div>
 
-            <!-- Upload Gambar Referensi (Galeri HP) -->
             <div>
-                <label class="block text-sm font-medium text-slate-300 mb-2">Upload Referensi (Opsional)</label>
+                <label class="block text-sm font-medium text-slate-300 mb-1">Ide Cerita / Naskah / Produk</label>
+                <textarea id="sbInput" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:outline-none focus:border-indigo-500 text-sm" placeholder="Tuliskan detail ide atau produk di sini..."></textarea>
+            </div>
+
+            <!-- Upload Gambar Referensi (Karakter, Latar, Produk) -->
+            <div>
+                <label class="block text-sm font-medium text-slate-300 mb-2">Upload Referensi Gambar (Galeri HP)</label>
                 <div class="grid grid-cols-3 gap-2">
                     <label class="border border-dashed border-slate-700 hover:border-indigo-500 rounded-xl p-3 text-center cursor-pointer flex flex-col items-center justify-center bg-slate-950 transition">
-                        <i class="fa-solid fa-image text-indigo-400 mb-1"></i>
+                        <i class="fa-solid fa-user-ninja text-indigo-400 mb-1"></i>
                         <span class="text-[10px] text-slate-400">Karakter</span>
                         <input type="file" id="imgChar" accept="image/*" class="hidden" onchange="previewImage(this, 'previewChar')">
                     </label>
@@ -62,11 +72,10 @@
                         <input type="file" id="imgProd" accept="image/*" class="hidden" onchange="previewImage(this, 'previewProd')">
                     </label>
                 </div>
-                <!-- Area Pratinjau Gambar Terpilih -->
                 <div id="imagePreviewContainer" class="flex space-x-2 mt-2"></div>
             </div>
 
-            <!-- Pilihan Pengaturan (Scene, Durasi, Gaya Suara) -->
+            <!-- Pengaturan Scene, Durasi, Gaya Suara -->
             <div class="grid grid-cols-3 gap-3 pt-2 border-t border-slate-800">
                 <div>
                     <label class="block text-xs text-slate-400 mb-1">Jumlah Scene</label>
@@ -102,29 +111,15 @@
             </button>
         </div>
 
-        <!-- Hasil Storyboard -->
+        <!-- Area Hasil -->
         <div id="resultArea" class="space-y-4"></div>
 
     </main>
 
-    <!-- JavaScript Utama -->
+    <!-- JavaScript -->
     <script>
         let uploadedImages = {};
 
-        // Fungsi Ambil Gambar dari Galeri HP dan Ubah jadi Data digital
-        function praktikan(input, key) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadedImages[key] = e.target.result;
-                    alert("Gambar berhasil dipilih dari galeri!");
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // Fungsi khusus preview gambar (bisa dikembangkan sesuai kebutuhan)
         function previewImage(input, previewId) {
             const file = input.files[0];
             if (file) {
@@ -147,6 +142,7 @@
 
         async function runStoryboardGen() {
             const text = document.getElementById('sbInput').value.trim();
+            const mainCategory = document.getElementById('mainCategory').value;
             const count = document.getElementById('sbCount').value;
             const durationTotal = document.getElementById('sbDuration').value;
             const voStyle = document.getElementById('sbVoStyle').value;
@@ -163,7 +159,6 @@
             resultArea.innerHTML = '';
 
             try {
-                // Memanggil Pelayan Toko (Backend Vercel)
                 const response = await fetch('/api/generate', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -172,7 +167,7 @@
                         count, 
                         durationTotal, 
                         voStyle, 
-                        mainCategory: "General Commercial",
+                        mainCategory, 
                         images: uploadedImages 
                     })
                 });
@@ -200,7 +195,7 @@
                         resultArea.appendChild(card);
                     });
                 } else {
-                    throw.error('Format data salah');
+                    throw new Error('Format data salah');
                 }
             } catch (error) {
                 console.error(error);
@@ -212,7 +207,7 @@
         }
 
         function openHistory() { alert("Fitur riwayat tersimpan akan segera hadir!"); }
-        function openHelp() { alert("Kontenin AI v2.7 Pro - Masukkan ide, upload referensi, dan generate storyboard komersialmu dengan aman!"); }
+        function openHelp() { alert("Kontenin AI - Masukkan kategori, ide, upload referensi galeri HP, dan generate storyboard komersialmu!"); }
     </script>
 </body>
 </html>
