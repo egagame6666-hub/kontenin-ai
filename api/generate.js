@@ -1,7 +1,7 @@
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,GET');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
     if (req.method === 'OPTIONS') {
@@ -21,7 +21,6 @@ export default async function handler(req, res) {
 
         const { text, count, durationTotal, voStyle, mainCategory, images } = req.body;
 
-        // Siapkan bagian parts untuk Gemini API (mendukung teks dan gambar base64)
         let parts = [];
 
         if (images) {
@@ -58,7 +57,6 @@ export default async function handler(req, res) {
 
         parts.push({ text: promptText });
 
-        // Menggunakan endpoint resmi Gemini API secara langsung via fetch (Tanpa kendala modul NPM)
         const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
             method: 'POST',
             headers: {
@@ -82,8 +80,8 @@ export default async function handler(req, res) {
 
         return res.status(200).json({ success: true, data: storyboardArray });
 
-    } async (error) {
+    } catch (error) {
         console.error("Server Error:", error);
-        return res.status(500).json({ error: 'Gagal memproses AI generator di server.' });
+        return res.status(500).json({ error: error.message || 'Gagal memproses AI generator di server.' });
     }
 }
