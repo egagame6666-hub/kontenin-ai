@@ -30,10 +30,19 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
+    <!-- SPLASH SCREEN BERUPA VIDEO (splash.mp4) -->
+    <div id="splash-screen" class="fixed inset-0 bg-slate-950 z-50 flex items-center justify-center transition-opacity duration-700">
+        <video id="splash-video" class="w-full h-full object-cover" autoplay muted playsinline>
+            <source src="splash.mp4" type="video/mp4">
+            Browser Anda tidak mendukung pemutaran video.
+        </video>
+    </div>
+
     <!-- Header / Navbar -->
-    <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-50">
+    <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-40">
         <div class="flex items-center space-x-3">
-            <div class="bg-gradient-to-tr from-brand-600 to-accent-500 text-white p-2.5 rounded-2xl font-bold text-base shadow-md shadow-brand-500/20">KP</div>
+            <!-- Logo Asli Warung (logo.png) -->
+            <img src="logo.png" alt="Logo Warung" onerror="this.src='https://via.placeholder.com/40?text=LOGO'" class="w-10 h-10 rounded-2xl object-cover shadow-md shadow-brand-500/20 border border-slate-200 dark:border-slate-700">
             <div>
                 <h1 class="font-bold text-sm tracking-tight leading-tight">KasirPro Fintech</h1>
                 <p class="text-[11px] text-slate-500 dark:text-slate-400">Warung UMKM Offline Mode</p>
@@ -148,7 +157,6 @@
             <div class="lg:col-span-2 space-y-4">
                 <div class="flex space-x-2">
                     <input type="text" id="search-product" oninput="filterProducts()" placeholder="Cari nama barang atau ketik barcode..." class="flex-1 px-4 py-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm shadow-sm">
-                    <!-- Tombol Buka Kamera Scanner -->
                     <button onclick="openCameraScanner('pos')" class="px-4 py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl text-xs flex items-center space-x-1.5 shadow-md shadow-brand-500/20 transition whitespace-nowrap">
                         <span>📷 Scan Kamera</span>
                     </button>
@@ -191,7 +199,6 @@
                 </div>
                 <button onclick="openAddProductModal()" class="px-4 py-2.5 bg-brand-600 text-white font-bold rounded-2xl text-xs shadow-md shadow-brand-500/20">Tambah Produk</button>
             </div>
-            <!-- Input Scan Barcode / Tombol Kamera untuk Update Harga & Stok Cepat -->
             <div class="flex space-x-2 pt-2">
                 <input type="text" id="scan-barcode-input" placeholder="💡 Ketik kode barcode atau gunakan tombol scan kamera di sebelah..." 
                     class="flex-1 px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-medium"
@@ -332,6 +339,25 @@
 
     <!-- JavaScript Logika Lengkap -->
     <script>
+        // Logika Splash Screen Video
+        window.addEventListener('load', function() {
+            const videoEl = document.getElementById('splash-video');
+            if (videoEl) {
+                videoEl.onended = function() { removeSplash(); };
+                setTimeout(removeSplash, 3500); // Cadangan 3.5 detik
+            } else {
+                setTimeout(removeSplash, 1500);
+            }
+        });
+
+        function removeSplash() {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }
+        }
+
         let products = JSON.parse(localStorage.getItem('warung_products')) || [
             { id: 1, name: "Minyak Goreng 1L", barcode: "8991001", buyPrice: 16000, price: 18500, stock: 25, category: "Sembako" },
             { id: 2, name: "Beras Premium 5kg", barcode: "8991002", buyPrice: 60000, price: 68000, stock: 10, category: "Sembako" },
@@ -343,16 +369,8 @@
         let cart = [];
         let transactions = JSON.parse(localStorage.getItem('warung_transactions')) || [];
         let hutangList = JSON.parse(localStorage.getItem('warung_hutang')) || [];
-        let activeScannerMode = 'pos'; // 'pos' atau 'inventory'
+        let activeScannerMode = 'pos';
         let html5QrCode = null;
-
-        window.onload = function() {
-            renderDashboard();
-            renderProducts(products);
-            renderInventory();
-            renderHutang();
-            renderTransactionHistory();
-        };
 
         function switchTab(tabId) {
             const tabs = ['dashboard', 'pos', 'inventory', 'hutang', 'laporan', 'pengaturan'];
@@ -398,7 +416,6 @@
             document.getElementById('dash-profit').innerText = `Rp ${totalProfit.toLocaleString('id-ID')}`;
             document.getElementById('donut-total-text').innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
 
-            // Render Donut Chart
             let maxCat = Math.max(totalOmset, 1);
             let degSembako = (catTotals.Sembako / maxCat) * 360;
             let degMakanan = degSembako + ((catTotals.Makanan / maxCat) * 360);
@@ -412,7 +429,7 @@
 
             const rankingContainer = document.getElementById('bestseller-ranking-list');
             if (sortedProducts.length === 0) {
-                rankingContainer.innerHTML = `<p class="text-xs text-slate-400 py-4 text-center">Belum ada data penjualan hari ini.</p>`;
+                rankingContainer.innerHTML = `<p class="text-xs text-slate-400 py-6 text-center">Belum ada transaksi penjualan hari ini.</p>`;
             } else {
                 rankingContainer.innerHTML = sortedProducts.map((p, idx) => `
                     <div class="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/50">
@@ -447,7 +464,6 @@
             const filtered = products.filter(p => p.name.toLowerCase().includes(query) || p.barcode === query);
             renderProducts(filtered);
             
-            // Jika ada yang cocok persis dengan barcode saat mengetik/scan hardware, otomatis masukkan ke keranjang
             if (filtered.length === 1 && filtered[0].barcode === query) {
                 addToCart(filtered[0].id);
                 document.getElementById('search-product').value = '';
@@ -556,7 +572,6 @@
             `).join('');
         }
 
-        // Handler Scan Barcode untuk Update Harga / Pilih Barang
         function handleBarcodeScan(barcodeValue) {
             const product = products.find(p => p.barcode === barcodeValue || p.id == barcodeValue);
             if (!product) {
@@ -580,7 +595,6 @@
             document.getElementById('scan-barcode-input').value = '';
         }
 
-        // Buka Kamera untuk Scan Barcode via HP / Webcam
         function openCameraScanner(mode) {
             activeScannerMode = mode;
             document.getElementById('scanner-modal').classList.remove('hidden');
@@ -590,7 +604,6 @@
                 { facingMode: "environment" },
                 { fps: 10, qrbox: { width: 250, height: 150 } },
                 (decodedText) => {
-                    // Berhasil scan barcode
                     closeCameraScanner();
                     if (activeScannerMode === 'pos') {
                         const prod = products.find(p => p.barcode === decodedText || p.id == decodedText);
@@ -603,9 +616,7 @@
                         handleBarcodeScan(decodedText);
                     }
                 },
-                (errorMessage) => {
-                    // Error scanning frame (diabaikan agar terus scan)
-                }
+                (errorMessage) => {}
             ).catch((err) => {
                 alert("Gagal membuka kamera. Pastikan izin kamera diaktifkan.");
                 closeCameraScanner();
