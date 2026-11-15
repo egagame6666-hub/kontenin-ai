@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KasirPro Finansial - Warung UMKM Modern</title>
+    <title>KasirPro Fintech - Warung UMKM Modern</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -28,7 +28,7 @@
 </head>
 <body class="bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
 
-    <!-- Header / Navbar Modern Fintech Style -->
+    <!-- Header / Navbar -->
     <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800 px-6 py-3 flex justify-between items-center sticky top-0 z-50">
         <div class="flex items-center space-x-3">
             <div class="bg-gradient-to-tr from-brand-600 to-accent-500 text-white p-2.5 rounded-2xl font-bold text-base shadow-md shadow-brand-500/20">KP</div>
@@ -39,14 +39,13 @@
         </div>
         <div class="flex items-center space-x-3">
             <span id="printer-status" class="px-3 py-1 bg-rose-500/10 text-rose-600 dark:text-rose-400 text-[11px] font-bold rounded-xl border border-rose-500/20">Printer Putus</span>
-            <!-- Toggle Dark / White Mode -->
             <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Ganti Tema">
                 <svg id="theme-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             </button>
         </div>
     </header>
 
-    <!-- Navigasi Menu Model Tab Fintech -->
+    <!-- Navigasi Menu Tab -->
     <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-2.5 flex space-x-2 overflow-x-auto shadow-sm">
         <button onclick="switchTab('dashboard')" id="nav-dashboard" class="px-4 py-2 font-semibold text-xs rounded-xl bg-brand-600 text-white transition whitespace-nowrap shadow-sm shadow-brand-500/30">Dashboard</button>
         <button onclick="switchTab('pos')" id="nav-pos" class="px-4 py-2 font-semibold text-xs rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition whitespace-nowrap">Kasir (POS)</button>
@@ -59,9 +58,8 @@
     <!-- Konten Utama -->
     <main class="flex-1 max-w-7xl w-full mx-auto p-6 space-y-6">
         
-        <!-- 1. TAB DASHBOARD (Gaya Kartu Saldo & Grafik Keuangan Utama) -->
+        <!-- 1. TAB DASHBOARD -->
         <section id="tab-content-dashboard" class="space-y-6">
-            <!-- Kartu Saldo / Omset Utama ala Fintech -->
             <div class="relative overflow-hidden bg-gradient-to-r from-blue-600 via-indigo-600 to-brand-dark p-6 rounded-3xl text-white shadow-xl shadow-blue-500/10">
                 <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
                 <div class="flex justify-between items-start">
@@ -71,7 +69,6 @@
                     </div>
                     <span class="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-semibold">Live Offline</span>
                 </div>
-                <!-- Grafik Mini Tren di Kartu -->
                 <div class="mt-6 pt-4 border-t border-white/15 flex justify-between items-end">
                     <div>
                         <p class="text-[11px] text-blue-200">Estimasi Laba Bersih (Net Profit)</p>
@@ -84,7 +81,7 @@
                 </div>
             </div>
 
-            <!-- Pintasan Cepat (Quick Actions) -->
+            <!-- Pintasan Cepat -->
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                 <button onclick="switchTab('pos')" class="p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 hover:border-brand-500 text-left transition group">
                     <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center font-bold mb-3 group-hover:scale-110 transition">🛒</div>
@@ -108,49 +105,35 @@
                 </button>
             </div>
 
-            <!-- Widget Visualisasi Grafik Keuangan di Dashboard -->
+            <!-- Widget Grafik Pie / Donut Style -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Grafik Batang Kategori Terlaris -->
-                <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 space-y-4">
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-base">Grafik Penjualan per Kategori</h3>
-                        <span class="text-xs text-slate-400">Real-time update</span>
+                <!-- Pie Chart Style Visualizer -->
+                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between space-y-4">
+                    <div>
+                        <h3 class="font-bold text-base">Distribusi Kategori Produk</h3>
+                        <p class="text-xs text-slate-500">Proporsi omset berdasarkan kategori</p>
                     </div>
-                    <div class="space-y-3 pt-2">
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold mb-1">
-                                <span>Sembako (Beras, Minyak, Gula)</span>
-                                <span id="stat-sembako">Rp 0 (0%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
-                                <div id="bar-sembako" class="bg-blue-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                    <!-- Donut Graphic Representation -->
+                    <div class="flex items-center justify-center py-4">
+                        <div class="relative w-40 h-40 rounded-full flex items-center justify-center shadow-inner" id="donut-chart-container" style="background: conic-gradient(#3B82F6 0deg 120deg, #6366F1 120deg 240deg, #10B981 240deg 360deg);">
+                            <div class="absolute w-28 h-28 bg-white dark:bg-slate-900 rounded-full flex flex-col items-center justify-center shadow-sm">
+                                <span class="text-[10px] uppercase text-slate-400 font-bold">Total</span>
+                                <span id="donut-total-text" class="text-xs font-extrabold text-slate-800 dark:text-slate-100">Rp 0</span>
                             </div>
                         </div>
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold mb-1">
-                                <span>Makanan & Mie Instan</span>
-                                <span id="stat-makanan">Rp 0 (0%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
-                                <div id="bar-makanan" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <div class="flex justify-between text-xs font-semibold mb-1">
-                                <span>Minuman & Sachet</span>
-                                <span id="stat-minuman">Rp 0 (0%)</span>
-                            </div>
-                            <div class="w-full bg-slate-100 dark:bg-slate-800 h-3 rounded-full overflow-hidden">
-                                <div id="bar-minuman" class="bg-emerald-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-                            </div>
-                        </div>
+                    </div>
+                    <!-- Legend -->
+                    <div class="grid grid-cols-3 gap-2 text-center text-[11px] font-semibold">
+                        <div class="p-2 bg-blue-500/10 text-blue-500 rounded-xl">Sembako</div>
+                        <div class="p-2 bg-indigo-500/10 text-indigo-500 rounded-xl">Makanan</div>
+                        <div class="p-2 bg-emerald-500/10 text-emerald-500 rounded-xl">Minuman</div>
                     </div>
                 </div>
 
-                <!-- Ringkasan Produk Best Seller -->
-                <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
+                <!-- Produk Unggulan -->
+                <div class="lg:col-span-2 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col justify-between">
                     <div>
-                        <h3 class="font-bold text-base mb-1">Produk Unggulan</h3>
+                        <h3 class="font-bold text-base mb-1">Produk Unggulan (Best Seller)</h3>
                         <p class="text-xs text-slate-500">Paling sering dibeli pelanggan</p>
                         <div class="mt-6 flex items-center space-x-4">
                             <div class="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold text-xl">🔥</div>
@@ -160,11 +143,9 @@
                             </div>
                         </div>
                     </div>
-                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
-                        <div class="flex justify-between text-xs">
-                            <span class="text-slate-500">Status Sistem</span>
-                            <span class="font-bold text-emerald-500">Normal (Aman)</span>
-                        </div>
+                    <div class="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-between text-xs">
+                        <span class="text-slate-500">Status Sistem Offline</span>
+                        <span class="font-bold text-emerald-500">Aman & Terenkripsi Lokal</span>
                     </div>
                 </div>
             </div>
@@ -181,7 +162,7 @@
                 </div>
             </div>
 
-            <!-- Keranjang & Pembayaran ala Fintech -->
+            <!-- Keranjang & Pembayaran -->
             <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 flex flex-col h-[calc(100vh-200px)] sticky top-24">
                 <h2 class="font-bold text-base pb-3 border-b border-slate-100 dark:border-slate-800">Keranjang Belanja</h2>
                 <div id="cart-items" class="flex-1 overflow-y-auto py-3 space-y-3 divide-y divide-slate-100 dark:divide-slate-800/50">
@@ -201,9 +182,9 @@
                         </select>
                         <input type="text" id="customer-name" placeholder="Nama Pelanggan (Wajib untuk Kasbon)" class="w-full px-3.5 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-sm">
                     </div>
-                    <div class="grid grid-cols-2 gap-2 pt-2">
-                        <button onclick="processCheckout()" class="py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl text-xs shadow-lg shadow-brand-500/20 transition">Bayar & Simpan</button>
-                        <button onclick="printLastReceipt()" class="py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-2xl text-xs shadow-lg shadow-indigo-500/20 transition">Cetak Struk</button>
+                    <div class="pt-2">
+                        <!-- Tombol Bayar & Simpan yang Memicu Popup Konfirmasi Struk -->
+                        <button onclick="processCheckout()" class="w-full py-3.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl text-xs shadow-lg shadow-brand-500/20 transition">Bayar & Simpan</button>
                     </div>
                 </div>
             </div>
@@ -230,9 +211,7 @@
                             <th class="p-3.5 rounded-r-xl">Aksi</th>
                         </tr>
                     </thead>
-                    <tbody id="inventory-table-body">
-                        <!-- Inventory Rows -->
-                    </tbody>
+                    <tbody id="inventory-table-body"></tbody>
                 </table>
             </div>
         </section>
@@ -253,26 +232,20 @@
                             <th class="p-3.5 rounded-r-xl">Kirim WhatsApp</th>
                         </tr>
                     </thead>
-                    <tbody id="hutang-table-body">
-                        <!-- Hutang Rows -->
-                    </tbody>
+                    <tbody id="hutang-table-body"></tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 5. TAB LAPORAN & GRAFIK KEUANGAN MENDALAM -->
+        <!-- 5. TAB LAPORAN & GRAFIK -->
         <section id="tab-content-laporan" class="hidden space-y-6 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800">
             <div class="flex justify-between items-center">
                 <div>
-                    <h2 class="font-bold text-base">Pusat Analisis & Grafik Keuangan</h2>
-                    <p class="text-xs text-slate-500">Unduh rekapitulasi laporan ke Excel atau sinkronisasi Google Sheets</p>
+                    <h2 class="font-bold text-base">Pusat Analisis & Rekap Keuangan</h2>
+                    <p class="text-xs text-slate-500">Unduh rekapitulasi laporan ke Excel atau Google Sheets</p>
                 </div>
-                <button onclick="exportToExcel()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-xs shadow-md shadow-emerald-500/20 flex items-center space-x-2">
-                    <span>Unduh Excel (.xlsx)</span>
-                </button>
+                <button onclick="exportToExcel()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl text-xs shadow-md shadow-emerald-500/20">Unduh Excel (.xlsx)</button>
             </div>
-
-            <!-- Grafik Analisis Keuangan di Menu Laporan -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
                 <div class="p-5 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-700/50">
                     <p class="text-xs text-slate-500 font-medium">Total Akumulasi Omset</p>
@@ -287,7 +260,6 @@
                     <h3 id="report-avg-trx" class="text-2xl font-extrabold mt-1">Rp 0</h3>
                 </div>
             </div>
-
             <div class="mt-4 overflow-x-auto">
                 <table class="w-full text-left text-sm">
                     <thead class="bg-slate-50 dark:bg-slate-800 text-xs uppercase text-slate-500 dark:text-slate-400">
@@ -299,14 +271,12 @@
                             <th class="p-3.5 rounded-r-xl">Pelanggan</th>
                         </tr>
                     </thead>
-                    <tbody id="transaction-history-table">
-                        <!-- History -->
-                    </tbody>
+                    <tbody id="transaction-history-table"></tbody>
                 </table>
             </div>
         </section>
 
-        <!-- 6. TAB PENGATURAN STRUK & PRINTER -->
+        <!-- 6. TAB PENGATURAN STRUK -->
         <section id="tab-content-pengaturan" class="hidden space-y-4 bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-800 max-w-xl">
             <div>
                 <h2 class="font-bold text-base">Pengaturan Struk & Thermal Printer</h2>
@@ -331,7 +301,22 @@
 
     </main>
 
-    <!-- JavaScript Logika & Pembaruan Grafik Otomatis -->
+    <!-- POPUP MODAL KONFIRMASI CETAK STRUK (SESUAI PERMINTAAN) -->
+    <div id="receipt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+        <div class="bg-white dark:bg-slate-900 p-6 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 max-w-sm w-full text-center space-y-4 animate-in fade-in zoom-in duration-200">
+            <div class="w-14 h-14 bg-emerald-500/10 text-emerald-500 rounded-2xl flex items-center justify-center mx-auto text-2xl font-bold">✓</div>
+            <div>
+                <h3 class="font-bold text-lg">Transaksi Berhasil Disimpan!</h3>
+                <p class="text-xs text-slate-500 mt-1">Apakah Anda ingin mencetak struk belanja untuk pelanggan ini?</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="closeReceiptModal(false)" class="py-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-2xl text-xs transition">Tidak Perlu</button>
+                <button onclick="closeReceiptModal(true)" class="py-3 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-2xl text-xs shadow-md shadow-brand-500/20 transition">Ya, Cetak Struk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logika Lengkap -->
     <script>
         let products = JSON.parse(localStorage.getItem('warung_products')) || [
             { id: 1, name: "Minyak Goreng 1L", buyPrice: 16000, price: 18500, stock: 25, category: "Sembako" },
@@ -393,25 +378,22 @@
             document.getElementById('dash-omset').innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
             document.getElementById('dash-trx').innerText = `${transactions.length} Trx`;
             document.getElementById('dash-profit').innerText = `Rp ${totalProfit.toLocaleString('id-ID')}`;
+            document.getElementById('donut-total-text').innerText = `Rp ${totalOmset.toLocaleString('id-ID')}`;
             
             if(transactions.length > 0) {
                 document.getElementById('dash-bestseller').innerText = transactions[0].items[0]?.name || '-';
             }
 
-            // Update Grafik Batang Kategori di Dashboard
+            // Render Donut/Pie Chart Conic Gradient CSS
             let maxCat = Math.max(totalOmset, 1);
-            let pctSembako = Math.round((catTotals.Sembako / maxCat) * 100);
-            let pctMakanan = Math.round((catTotals.Makanan / maxCat) * 100);
-            let pctMinuman = Math.round((catTotals.Minuman / maxCat) * 100);
-
-            document.getElementById('bar-sembako').style.width = pctSembako + '%';
-            document.getElementById('stat-sembako').innerText = `Rp ${catTotals.Sembako.toLocaleString('id-ID')} (${pctSembako}%)`;
-
-            document.getElementById('bar-makanan').style.width = pctMakanan + '%';
-            document.getElementById('stat-makanan').innerText = `Rp ${catTotals.Makanan.toLocaleString('id-ID')} (${pctMakanan}%)`;
-
-            document.getElementById('bar-minuman').style.width = pctMinuman + '%';
-            document.getElementById('stat-minuman').innerText = `Rp ${catTotals.Minuman.toLocaleString('id-ID')} (${pctMinuman}%)`;
+            let degSembako = (catTotals.Sembako / maxCat) * 360;
+            let degMakanan = degSembako + ((catTotals.Makanan / maxCat) * 360);
+            
+            let gradientCSS = `conic-gradient(#3B82F6 0deg ${degSembako}deg, #6366F1 ${degSembako}deg ${degMakanan}deg, #10B981 ${degMakanan}deg 360deg)`;
+            if(totalOmset === 0) {
+                gradientCSS = `conic-gradient(#cbd5e1 0deg 360deg)`;
+            }
+            document.getElementById('donut-chart-container').style.background = gradientCSS;
         }
 
         function renderProducts(items) {
@@ -472,8 +454,10 @@
             document.getElementById('cart-total').innerText = `Rp ${total.toLocaleString('id-ID')}`;
         }
 
+        // FUNGSI BAYAR & SIMPAN (MEMunculkan Pop-up Konfirmasi Cetak Struk)
         function processCheckout() {
             if (cart.length === 0) { alert("Keranjang masih kosong!"); return; }
+            
             const method = document.getElementById('payment-method').value;
             const customer = document.getElementById('customer-name').value || 'Umum';
             const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -507,12 +491,23 @@
                 renderHutang();
             }
 
-            alert(`Transaksi Berhasil Disimpan!`);
+            // Kosongkan keranjang & perbarui data
             cart = [];
             renderCart();
             renderInventory();
             renderProducts(products);
             renderDashboard();
+
+            // Tampilkan Popup Modal Tanya Cetak Struk
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        // Handler Pilihan Pop-up Cetak Struk
+        function closeReceiptModal(shouldPrint) {
+            document.getElementById('receipt-modal').classList.add('hidden');
+            if(shouldPrint) {
+                printLastReceipt();
+            }
         }
 
         function renderInventory() {
