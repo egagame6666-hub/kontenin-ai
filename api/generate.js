@@ -1,20 +1,28 @@
-import { GoogleGenAI } from "@google/genai";
+const { GoogleGenAI } = require('@google/genai');
 
-export const config = {
-    api: {
-        bodyParser: {
-            sizeLimit: '10mb',
-        },
-    },
-};
+module.exports = async function handler(req, res) {
+    // Izinkan CORS agar bisa diakses dari frontend
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,GET');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-export default async function handler(req, res) {
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ error: 'API Key belum diset di Environment Variables Vercel.' });
+        }
+
+        const ai = new GoogleGenAI({ apiKey: apiKey });
         const { text, count, durationTotal, voStyle, mainCategory, images } = req.body;
 
         let contents = [];
@@ -66,6 +74,6 @@ export default async function handler(req, res) {
 
     } catch (error) {
         console.error("API Error:", error);
-        return res.status(500).json({ error: 'Gagal memproses AI generator.' });
+        return res.status(500).json({ error: error.message || 'Gagal memproses AI generator.' });
     }
-}
+};
