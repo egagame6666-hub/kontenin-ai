@@ -36,7 +36,7 @@
 
         <!-- Main Content Form -->
         <main class="space-y-4 flex-1 pb-10">
-            <!-- Pengaturan API Key Langsung -->
+            <!-- Pengaturan API Key Langsung (Bisa disembunyikan/dikosongkan nanti jika pakai server) -->
             <div class="bg-cardBg border border-zinc-800 p-3 rounded-xl">
                 <label class="block text-[11px] font-medium text-amber-400 mb-1">Gemini API Key (Masukkan sekali saja)</label>
                 <input type="password" id="apiKeyInput" placeholder="Tempel API Key Google AI Studio di sini..." class="w-full bg-zinc-900 border border-zinc-700 rounded-lg p-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500">
@@ -52,7 +52,7 @@
                 </select>
             </div>
 
-            <!-- Upload Aset Referensi (Karakter, Latar, Produk) -->
+            <!-- Upload Aset Referensi (Karakter, Latar, Produk) dengan Kompresi Otomatis -->
             <div class="grid grid-cols-3 gap-2">
                 <button type="button" onclick="uploadAsset('Karakter')" class="bg-cardBg border border-zinc-700 hover:border-amber-500/50 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-center gap-1 group">
                     <span class="text-lg">👤</span>
@@ -71,13 +71,13 @@
                 </button>
             </div>
 
-            <!-- Input File Tersembunyi untuk Galeri / Laptop -->
-            <input type="file" id="hiddenGaleriInput" accept="image/*" class="hidden" onchange="prosesFileGaleri(this)">
+            <!-- Input File Tersembunyi -->
+            <input type="file" id="hiddenGaleriInput" accept="image/*" class="hidden" onchange="prosesDanKompresFile(this)">
 
             <!-- Isi Kepala (Perintah Utama Ide Cerita) -->
             <div>
                 <label class="block text-xs font-medium text-zinc-300 mb-1">Isi Kepala (Ide Cerita / Skenario)</label>
-                <textarea id="ideaInput" rows="4" class="w-full bg-cardBg border border-zinc-700 rounded-lg p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500" placeholder="Tuliskan ide di kepala kamu untuk merealisasikan kombinasi karakter, latar, dan produk..."></textarea>
+                <textarea id="ideaInput" rows="4" class="w-full bg-cardBg border border-zinc-700 rounded-xl p-3 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-500" placeholder="Tuliskan ide di kepala kamu untuk merealisasikan kombinasi karakter, latar, dan produk..."></textarea>
             </div>
 
             <!-- Pengaturan Scene & Durasi -->
@@ -120,7 +120,7 @@
         </main>
     </div>
 
-    <!-- Script Logika Frontend -->
+    <!-- Script Logika Frontend dengan Kompresi Gambar Cepat -->
     <script>
         let uploadedImages = { Karakter: null, Latar: null, Produk: null };
         let activeUploadType = '';
@@ -137,21 +137,38 @@
             document.getElementById('hiddenGaleriInput').click();
         }
 
-        function prosesFileGaleri(input) {
+        // Fungsi Kompresi Otomatis agar Upload Gambar Super Cepat & Tidak Lemot
+        function prosesDanKompresFile(input) {
             const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadedImages[activeUploadType] = e.target.result;
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const MAX_WIDTH = 800; // Kompres maksimal lebar 800px agar ringan dikirim
+                    const scaleSize = MAX_WIDTH / img.width;
+                    canvas.width = MAX_WIDTH;
+                    canvas.height = img.height * scaleSize;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Ubah ke format JPEG terkompresi
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    uploadedImages[activeUploadType] = compressedDataUrl;
+
                     const labelMap = { 'Karakter': 'lblKarakter', 'Latar': 'lblLatar', 'Produk': 'lblProduk' };
                     const el = document.getElementById(labelMap[activeUploadType]);
                     if (el) {
-                        el.innerText = "Teranalisis ✓";
+                        el.innerText = "Terkompresi ✓";
                         el.className = "text-[9px] text-emerald-400 font-bold";
                     }
                 };
-                reader.readAsDataURL(file);
-            }
+            };
         }
 
         async function generateStoryboard() {
@@ -174,7 +191,7 @@
             localStorage.setItem('gemini_user_api_key', apiKey);
 
             const container = document.getElementById('storyboardResultContainer');
-            container.innerHTML = `<div class="text-center py-6 text-xs text-amber-400 animate-pulse">🎬 Sutradara AI sedang meracik kombinasi visual dan naskah scene...</div>`;
+            container.innerHTML = `<div class="text-center py-6 text-xs text-amber-400 animate-pulse">🎬 Sutradara AI sedang meracik kombinasi visual dan naskah dengan cepat...</div>`;
 
             let contents = [];
             let parts = [];
@@ -182,7 +199,7 @@
             if (uploadedImages.Karakter) {
                 parts.push({
                     inlineData: {
-                        mimeType: uploadedImages.Karakter.split(';')[0].replace('data:', ''),
+                        mimeType: 'image/jpeg',
                         data: uploadedImages.Karakter.split(';base64,').pop()
                     }
                 });
@@ -190,7 +207,7 @@
             if (uploadedImages.Latar) {
                 parts.push({
                     inlineData: {
-                        mimeType: uploadedImages.Latar.split(';')[0].replace('data:', ''),
+                        mimeType: 'image/jpeg',
                         data: uploadedImages.Latar.split(';base64,').pop()
                     }
                 });
@@ -198,7 +215,7 @@
             if (uploadedImages.Produk) {
                 parts.push({
                     inlineData: {
-                        mimeType: uploadedImages.Produk.split(';')[0].replace('data:', ''),
+                        mimeType: 'image/jpeg',
                         data: uploadedImages.Produk.split(';base64,').pop()
                     }
                 });
@@ -214,7 +231,7 @@
                   {
                     "scene": 1,
                     "timing": "0 - 5 Detik",
-                    "visual_prompt": "Deskripsi sinematik detail penggabungan karakter, latar, dan produk",
+                    "visual_prompt": "Deskripsi sinematik detail penggabungan karakter, latar, dan produk untuk scene ini",
                     "voiceover": "Teks naskah voiceover yang menarik"
                   }
                 ]
@@ -256,8 +273,8 @@
             container.innerHTML = '<h2 class="text-xs font-bold text-amber-400 mb-2 uppercase tracking-wide">✨ Hasil Storyboard & Panel Visual:</h2>';
             
             dataArray.forEach((item, index) => {
-                // Ambil gambar referensi utama (jika ada, utamakan Produk atau Karakter sebagai preview panel)
-                let previewImg = uploadedImages.Produk || uploadedImages.Karakter || uploadedImages.Latar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop';
+                // Gunakan gambar yang diupload pengguna sebagai basis visual scene, atau fallback ke produk/karakter
+                let sceneImg = uploadedImages.Produk || uploadedImages.Karakter || uploadedImages.Latar || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop';
 
                 const card = document.createElement('div');
                 card.className = "bg-cardBg border border-zinc-800 rounded-2xl p-4 text-white shadow-xl space-y-3";
@@ -267,11 +284,11 @@
                         <span class="text-[10px] text-zinc-400 font-mono">⏱️ ${item.timing}</span>
                     </div>
 
-                    <!-- Panel Visual / Mockup Gambar AI per Scene -->
+                    <!-- Panel Visual / Preview Gambar Scene -->
                     <div class="relative rounded-xl overflow-hidden border border-zinc-700 bg-zinc-950 aspect-video flex items-center justify-center group">
-                        <img src="${previewImg}" alt="Visual Scene ${item.scene}" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-300">
-                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2.5">
-                            <p class="text-[10px] text-zinc-200 line-clamp-2"><strong class="text-amber-400">Visual Prompt:</strong> ${item.visual_prompt}</p>
+                        <img src="${sceneImg}" alt="Visual Scene ${item.scene}" class="w-full h-full object-cover opacity-90 group-hover:scale-105 transition duration-300">
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3">
+                            <p class="text-[10px] text-zinc-200 leading-tight"><strong class="text-amber-400">Deskripsi Visual:</strong> ${item.visual_prompt}</p>
                         </div>
                     </div>
 
