@@ -187,9 +187,15 @@
             <div class="flex justify-between items-center">
                 <div>
                     <h2 class="font-bold text-base">Manajemen Produk & Stok Gudang</h2>
-                    <p class="text-xs text-slate-500">Kontrol harga beli, harga jual, dan persediaan</p>
+                    <p class="text-xs text-slate-500">Kontrol harga beli, harga jual, dan persediaan (Bisa Scan Barcode)</p>
                 </div>
                 <button onclick="openAddProductModal()" class="px-4 py-2.5 bg-brand-600 text-white font-bold rounded-2xl text-xs shadow-md shadow-brand-500/20">Tambah Produk</button>
+            </div>
+            <!-- Fitur Input Scan Barcode untuk Update Harga Cepat -->
+            <div class="pt-2">
+                <input type="text" id="scan-barcode-input" placeholder="💡 Klik di sini lalu scan barcode barang untuk update harga otomatis..." 
+                    class="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-medium"
+                    onchange="handleBarcodeScan(this.value)">
             </div>
             <div class="overflow-x-auto pt-2">
                 <table class="w-full text-left text-sm">
@@ -511,6 +517,27 @@
                     <td class="p-3.5"><button onclick="restock(${p.id})" class="text-xs px-3 py-1.5 bg-brand-500/10 text-brand-500 rounded-xl font-bold hover:bg-brand-500/20 transition">Tambah Stok</button></td>
                 </tr>
             `).join('');
+        }
+
+        // Fungsi Scan Barcode untuk Update Harga Cepat
+        function handleBarcodeScan(barcodeValue) {
+            const product = products.find(p => p.id == barcodeValue || p.name.toLowerCase().includes(barcodeValue.toLowerCase()));
+            if (!product) {
+                alert("Barang tidak ditemukan berdasarkan kode/nama tersebut!");
+                document.getElementById('scan-barcode-input').value = '';
+                return;
+            }
+
+            const action = prompt(`Ditemukan: ${product.name}\nHarga Jual Saat Ini: Rp ${product.price.toLocaleString('id-ID')}\n\nMasukkan harga jual BARU untuk update otomatis:`, product.price);
+            if (action !== null && !isNaN(action) && action.trim() !== '') {
+                product.price = parseInt(action);
+                localStorage.setItem('warung_products', JSON.stringify(products));
+                alert(`Harga berhasil di-update menjadi: Rp ${product.price.toLocaleString('id-ID')}`);
+                renderInventory();
+                renderProducts(products);
+            }
+            document.getElementById('scan-barcode-input').value = '';
+            document.getElementById('scan-barcode-input').focus();
         }
 
         function restock(id) {
