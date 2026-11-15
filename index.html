@@ -1,87 +1,82 @@
-export default async function handler(req, res) {
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+let uploadedImages = {
+    Karakter: null,
+    Latar: null,
+    Produk: null
+};
+let activeUploadType = '';
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
+// Fungsi saat tombol Karakter, Latar, atau Produk diklik
+function uploadAsset(type) {
+    activeUploadType = type;
+    document.getElementById('hiddenGaleriInput').click();
+}
+
+// Fungsi menangkap foto dari galeri HP
+function prosesFileGaleri(input) {
+    const file = input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            uploadedImages[activeUploadType] = e.target.result;
+            
+            // Mengubah teks tombol indikator sesuai jenis aset yang di-upload
+            const labelMap = {
+                'Karakter': 'lblKarakter',
+                'Latar': 'lblLatar',
+                'Produk': 'lblProduk'
+            };
+            const el = document.getElementById(labelMap[activeUploadType]);
+            if (el) {
+                el.innerText = `${activeUploadType}: Teranalisis ✓`;
+                el.className = "text-[9px] text-emerald-400 font-bold";
+            }
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Fungsi utama saat tombol "Generate Storyboard" / "Isi Kepala" dieksekusi
+async function generateStoryboard() {
+    const text = document.getElementById('ideaInput').value; // Isi Kepala
+    const count = document.getElementById('sceneCount').value;
+    const durationTotal = document.getElementById('totalDuration').value;
+    const voStyle = document.getElementById('voStyle').value;
+    const mainCategory = document.getElementById('mainCategory').value;
+
+    if (!text.trim()) {
+        alert("Silakan isi dulu bagian 'Isi Kepala' atau ide ceritanya!");
         return;
     }
 
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+    // Tampilkan indikator loading di tombol atau layar jika ada
+    console.lang && console.log("Mengirim data kombinasi ke Pelayan Toko...");
 
     try {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            return res.status(500).json({ error: 'API Key belum diatur di Environment Variables Vercel.' });
-        }
-
-        const { text, count, durationTotal, voStyle, mainCategory, images } = req.body;
-
-        let parts = [];
-
-        if (images) {
-            for (let key in images) {
-                if (images[key]) {
-                    const base64Data = images[key].split(';base64,').pop();
-                    const mimeType = images[key].split(';')[0].replace('data:', '');
-                    
-                    parts.push({
-                        inlineData: {
-                            mimeType: mimeType,
-                            data: base64Data
-                        }
-                    });
-                }
-            }
-        }
-
-        const promptText = `
-            Bertindaklah sebagai Sutradara AI dan Copywriting Profesional untuk konten ${mainCategory}.
-            Buatkan ${count} scene storyboard video berdurasi total ${durationTotal} detik berdasarkan ide berikut: "${text}".
-            Gaya bahasa Voiceover (VO) menggunakan nada: ${voStyle}.
-            Jika ada gambar referensi di atas, jadikan acuan visual utama.
-            Berikan output dalam format JSON murni berupa array tanpa teks pengantar markdown lainnya:
-            [
-              {
-                "scene": 1,
-                "timing": "0 - 5 Detik",
-                "visual_prompt": "Deskripsi visual gambar",
-                "voiceover": "Teks naskah voiceover"
-              }
-            ]
-        `;
-
-        parts.push({ text: promptText });
-
-        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+        const response = await fetch('/api/generate', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                contents: [{ parts: parts }]
+                text: text,
+                count: count,
+                durationTotal: durationTotal,
+                voStyle: voStyle,
+                mainCategory: mainCategory,
+                images: uploadedImages // Mengirim objek Karakter, Latar, dan Produk sekaligus
             })
         });
 
-        const data = await geminiResponse.json();
-
-        if (data.error) {
-            console.error("Gemini API Error:", data.error);
-            return res.status(500).json({ error: data.error.message || 'Gagal dari server Gemini.' });
+        const result = await response.json();
+        
+        if (result.success) {
+            // Tampilkan hasil scene storyboard di layar web
+            tampilkanHasilStoryboard(result.data);
+        } else {
+            alert("Gagal memproses: " + (result.error || "Terjadi kesalahan pada sistem."));
         }
-
-        const rawText = data.candidates[0].content.parts[0].text.trim();
-        const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-        const storyboardArray = JSON.parse(cleanJsonText);
-
-        return res.status(200).json({ success: true, data: storyboardArray });
-
-    } catch (error) {
-        console.error("Server Error:", error);
-        return res.status(500).json({ error: error.message || 'Gagal memproses AI generator di server.' });
+    } catch (err) {
+        console.error("Fetch Error:", err);
+        alert("Gagal terhubung ke Pelayan Toko. Periksa koneksi internet atau Vercel kamu!");
     }
 }
