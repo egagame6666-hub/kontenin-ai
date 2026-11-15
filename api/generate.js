@@ -9,14 +9,11 @@ export default async function handler(req, res) {
         const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
         const { text, count, durationTotal, voStyle, mainCategory, images } = req.body;
 
-        // Siapkan bagian konten untuk dikirim ke Gemini (termasuk gambar jika ada)
         let contents = [];
 
-        // Jika ada gambar referensi yang di-upload dari galeri HP
         if (images) {
             for (let key in images) {
                 if (images[key]) {
-                    // Ambil data Base64 dari gambar
                     const base64Data = images[key].split(';base64,').pop();
                     const mimeType = images[key].split(';')[0].replace('data:', '');
                     
@@ -31,7 +28,7 @@ export default async function handler(req, res) {
         }
 
         const prompt = `
-            Bertindaklah sebagai Sutradara AI dan Copywriter Profesional untuk konten ${mainCategory}.
+            Bertindaklah sebagai Sutradara AI dan Copywriting Profesional untuk konten ${mainCategory}.
             Buatkan ${count} scene storyboard video berdurasi total ${durationTotal} detik berdasarkan ide berikut: "${text}".
             Gaya bahasa Voiceover (VO) menggunakan nada: ${voStyle}.
             Jika ada gambar referensi yang disertakan di atas, jadikan acuan visual utama untuk karakter, latar, atau produknya.
