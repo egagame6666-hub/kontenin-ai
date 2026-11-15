@@ -1,711 +1,87 @@
-<!DOCTYPE html>
-<html lang="id" class="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kontenin AI - Vision-Aware Storyboard Studio v2.7</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        darkbg: '#090d16',
-                        cardbg: '#131c31',
-                        bordercol: '#1e293b',
-                        accent: '#6366f1'
-                    }
-                }
-            }
+export default async function handler(req, res) {
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
+
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    try {
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) {
+            return res.status(500).json({ error: 'API Key belum diatur di Environment Variables Vercel.' });
         }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-</head>
-<body class="bg-darkbg text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- Top Navigation -->
-    <header class="border-b border-bordercol bg-cardbg/80 backdrop-blur sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col sm:flex-row justify-between items-center gap-3">
-            <div class="flex items-center space-x-3 w-full sm:w-auto justify-between sm:justify-start">
-                <div class="flex items-center space-x-3">
-                    <div class="bg-gradient-to-tr from-indigo-600 to-violet-500 p-2.5 rounded-xl text-white shadow-lg shadow-indigo-500/20">
-                        <i class="fa-solid fa-clapperboard text-sm"></i>
-                    </div>
-                    <div>
-                        <div class="flex items-center gap-2">
-                            <h1 class="font-bold text-base tracking-wide text-white">KONTENIN <span class="text-indigo-400">AI</span></h1>
-                            <span class="text-[10px] bg-indigo-500/20 text-indigo-300 font-semibold px-2 py-0.5 rounded-full border border-indigo-500/30">v2.7 Pro</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400">Vision-Aware Storyboard & Auto-Copywriting</p>
-                    </div>
-                </div>
-            </div>
+        const { text, count, durationTotal, voStyle, mainCategory, images } = req.body;
 
-            <!-- Tab Mode Switcher & Icon-Only Buttons -->
-            <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
-                <div class="flex bg-slate-900 p-1 rounded-xl border border-bordercol">
-                    <button onclick="switchTab('storyboard')" id="btnStoryboard" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white shadow">
-                        <i class="fa-solid fa-film mr-1.5"></i> Storyboard
-                    </button>
-                    <button onclick="switchTab('imageOnly')" id="btnImageOnly" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white">
-                        <i class="fa-solid fa-image mr-1.5"></i> Image Only
-                    </button>
-                </div>
-                
-                <div class="flex items-center gap-1.5">
-                    <button onclick="openHistoryModal()" title="Riwayat Project" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-indigo-400 border border-indigo-500/40 rounded-xl flex items-center justify-center transition shadow">
-                        <i class="fa-solid fa-clock-rotate-left text-xs"></i>
-                    </button>
-                    <button onclick="openSupportModal()" title="Pusat Bantuan & Support" class="w-9 h-9 bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 rounded-xl flex items-center justify-center transition shadow">
-                        <i class="fa-solid fa-headset text-xs"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </header>
+        let parts = [];
 
-    <!-- Main Workspace -->
-    <main class="max-w-7xl mx-auto px-4 py-6">
-
-        <!-- ================= MODE 1: STORYBOARD VIDEO ================= -->
-        <div id="modeStoryboard" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <section class="lg:col-span-4 space-y-4">
-                <div class="bg-cardbg p-5 rounded-2xl border border-bordercol shadow-xl space-y-4">
-                    <h2 class="font-semibold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-sliders text-indigo-400"></i> Parameter & Vision Preset
-                    </h2>
+        if (images) {
+            for (let key in images) {
+                if (images[key]) {
+                    const base64Data = images[key].split(';base64,').pop();
+                    const mimeType = images[key].split(';')[0].replace('data:', '');
                     
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Pilih Kategori Konten</label>
-                        <select id="mainCategory" onchange="onMainCategoryChange()" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
-                            <option value="affiliate">🛍️ Affiliate Product Review (TikTok/Reels)</option>
-                            <option value="ad">📢 Direct Response Ad (Meta Ads)</option>
-                            <option value="animation">🎬 Animasi (2D, 3D, Anime, dll)</option>
-                            <option value="drama">🎭 Drama Storytelling (Tradisional, China, Sinetron)</option>
-                            <option value="ugc">💬 UGC Video Testimoni</option>
-                        </select>
-                    </div>
-
-                    <div id="subCategoryWrapper" class="hidden">
-                        <label class="block text-xs font-medium text-amber-400 mb-1.5 flex justify-between">
-                            <span id="subCategoryLabel">Pilih Sub-Kategori</span>
-                            <span class="text-[10px] text-slate-400">Auto-Preset Engine Active</span>
-                        </label>
-                        <select id="subCategorySelect" class="w-full bg-slate-900 border border-amber-500/50 rounded-xl px-3 py-2.5 text-xs text-amber-200 focus:outline-none focus:border-amber-500">
-                            <!-- Diisi via JavaScript -->
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Jumlah Scene</label>
-                            <select id="sbSceneCount" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200">
-                                <option value="1">1 Scene</option>
-                                <option value="2">2 Scene</option>
-                                <option value="3">3 Scene</option>
-                                <option value="4">4 Scene</option>
-                                <option value="5" selected>5 Scene</option>
-                                <option value="6">6 Scene</option>
-                                <option value="7">7 Scene</option>
-                                <option value="8">8 Scene</option>
-                                <option value="9">9 Scene</option>
-                                <option value="10">10 Scene</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-medium text-slate-300 mb-1.5">Durasi Total</label>
-                            <select id="sbDurationTotal" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200">
-                                <option value="10">10 Detik (Kilat)</option>
-                                <option value="20">20 Detik (Cepat)</option>
-                                <option value="30" selected>30 Detik (Standar)</option>
-                                <option value="45">45 Detik (Detail)</option>
-                                <option value="60">60 Detik (Full Story)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
-                            <span>Gaya Bahasa Suara (Voiceover Tone)</span>
-                            <span class="text-indigo-400 text-[10px]">Auto-Copywriting AI</span>
-                        </label>
-                        <select id="voStyle" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200">
-                            <option value="asmr">🎙️ ASMR (Bisikan Lembut, Suara Tekstur & Relaxing)</option>
-                            <option value="affiliate">🔥 Bahasa Affiliate (Hard Selling / Racun Shopee)</option>
-                            <option value="jaksel">💅 Gaya Jaksel (Mix Indo-English Gaul)</option>
-                            <option value="storyteller">🎬 Story Teller (Emosional & Sinematik)</option>
-                            <option value="formal">👔 Formal (Profesional & Edukatif)</option>
-                            <option value="formal_santai">☕ Formal Santai (Ramah & Terpercaya)</option>
-                            <option value="bayi">👶 Bahasa Bayi / Lucu Imut</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Kunci Referensi Aset (AI Vision)</label>
-                        <!-- Tambahan input file tersembunyi agar bisa buka galeri HP -->
-                        <input type="file" id="hiddenGaleriInput" accept="image/*" class="hidden" onchange="prosesFileGaleri(this)">
-
-                        <div class="grid grid-cols-3 gap-2">
-                            <div onclick="uploadAsset('Karakter')" class="border-2 border-dashed border-indigo-700/60 hover:border-indigo-500 rounded-xl p-2 text-center cursor-pointer transition bg-slate-900/40 group flex flex-col justify-center items-center">
-                                <i class="fa-solid fa-user-gear text-indigo-400 text-sm mb-1"></i>
-                                <p class="text-[10px] text-slate-300 font-medium">Karakter</p>
-                                <p id="lblKarakter" class="text-[8px] text-slate-500">Upload</p>
-                            </div>
-                            <div onclick="uploadAsset('Latar')" class="border-2 border-dashed border-indigo-700/60 hover:border-indigo-500 rounded-xl p-2 text-center cursor-pointer transition bg-slate-900/40 group flex flex-col justify-center items-center">
-                                <i class="fa-solid fa-image text-emerald-400 text-sm mb-1"></i>
-                                <p class="text-[10px] text-slate-300 font-medium">Latar</p>
-                                <p id="lblLatar" class="text-[8px] text-slate-500">Upload</p>
-                            </div>
-                            <div onclick="uploadAsset('Produk')" class="border-2 border-dashed border-indigo-700/60 hover:border-indigo-500 rounded-xl p-2 text-center cursor-pointer transition bg-slate-900/40 group flex flex-col justify-center items-center">
-                                <i class="fa-solid fa-box-open text-amber-400 text-sm mb-1"></i>
-                                <p class="text-[10px] text-slate-300 font-medium">Produk</p>
-                                <p id="lblProduk" class="text-[8px] text-slate-500">Upload</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
-                            <span>Ketik Isi Kepala (Brain Dump)</span>
-                            <span class="text-indigo-400 text-[10px]">AI Analisis Gambar & Teks</span>
-                        </label>
-                        <textarea id="sbInput" rows="3" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-indigo-500" placeholder="Ketik alur ceritanya..."></textarea>
-                    </div>
-
-                    <button onclick="runStoryboardGen()" class="w-full bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold py-3 rounded-xl shadow-lg transition text-xs flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Storyboard & Auto-VO
-                    </button>
-                </div>
-            </section>
-
-            <section class="lg:col-span-8 space-y-4">
-                <div class="flex justify-between items-center bg-cardbg px-5 py-3 rounded-xl border border-bordercol">
-                    <h2 class="font-semibold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-film text-indigo-400 mr-2"></i> Panel Storyboard (<span id="sbCountDisplay">5</span> Scene)</h2>
-                    <div class="flex gap-2">
-                        <button onclick="exportScriptTxt()" class="bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs px-3 py-1.5 rounded-lg transition font-medium flex items-center gap-1.5">
-                            <i class="fa-solid fa-file-arrow-down"></i> Download Skrip .TXT
-                        </button>
-                        <button onclick="alert('Mengunduh seluruh gambar storyboard HD...')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700 flex items-center gap-1.5">
-                            <i class="fa-solid fa-download"></i> Gambar HD
-                        </button>
-                    </div>
-                </div>
-
-                <div id="sbContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-cardbg rounded-2xl border border-bordercol p-4 space-y-3 shadow-md flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-[11px] font-bold bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-md border border-indigo-500/30">Shot 01</span>
-                                <span class="text-[11px] text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800"><i class="fa-solid fa-clock text-[10px] mr-1"></i> 0 - 6 Detik</span>
-                            </div>
-                            <!-- GAMBAR DENGAN FITUR LONG-PRESS / DOWNLOAD -->
-                            <div class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner group">
-                                <img src="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80" alt="Storyboard Shot 1" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                                    <a href="https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1200&q=80" target="_blank" download="Shot-01.jpg" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium shadow flex items-center gap-1.5">
-                                        <i class="fa-solid fa-download"></i> Simpan Gambar
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mt-2">
-                            <p class="text-xs text-slate-300 font-medium">Visual dianalisis sesuai parameter scene & durasi. (Tekan lama gambar untuk download)</p>
-                            <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-indigo-400 font-bold"><i class="fa-solid fa-microphone mr-1"></i> Voiceover:</span>
-                                    <button onclick="alert('VO tersalin!')" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded"><i class="fa-solid fa-copy"></i> Copy</button>
-                                </div>
-                                <p class="text-slate-300 italic">"Parah sih ini, produknya beneran sebagus itu!"</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AUTO-CAPTION & HASHTAG GENERATOR BOX -->
-                <div id="captionBoxWrapper" class="bg-cardbg rounded-2xl border border-bordercol p-5 space-y-3 shadow-md hidden">
-                    <div class="flex justify-between items-center">
-                        <h3 class="font-bold text-xs text-emerald-400 uppercase tracking-wider flex items-center gap-2">
-                            <i class="fa-solid fa-hashtag"></i> Auto-Caption & Viral Hashtags Generator
-                        </h3>
-                        <button onclick="copyFullCaption()" class="bg-emerald-600 hover:bg-emerald-500 text-white text-xs px-3 py-1.5 rounded-lg font-semibold transition flex items-center gap-1.5 shadow">
-                            <i class="fa-solid fa-copy"></i> Copy Full Caption
-                        </button>
-                    </div>
-                    <div id="generatedCaptionContent" class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed font-mono whitespace-pre-line">
-                        <!-- Diisi via JavaScript -->
-                    </div>
-                </div>
-            </section>
-        </div>
-
-        <!-- ================= MODE 2: GENERATE IMAGE ONLY ================= -->
-        <div id="modeImageOnly" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-            <section class="lg:col-span-4 space-y-4">
-                <div class="bg-cardbg p-5 rounded-2xl border border-bordercol shadow-xl space-y-4">
-                    <h2 class="font-semibold text-xs uppercase tracking-wider text-slate-400 flex items-center gap-2">
-                        <i class="fa-solid fa-image text-emerald-400"></i> Smart Asset Generator
-                    </h2>
-                    
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5">Pilih Tipe Aset Visual</label>
-                        <select id="imgCategory" onchange="onCategoryChange()" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500">
-                            <option value="thumbnail">🔴 YouTube Thumbnail (16:9 - 1280x720)</option>
-                            <option value="poster_story">📱 Poster Instagram Story (9:16 - 1080x1920)</option>
-                            <option value="linkedin">👔 Foto Profil LinkedIn (1:1 Square)</option>
-                            <option value="product">📦 Mockup Produk Studio (IG Size Option)</option>
-                            <option value="character">👤 Pembuatan Karakter / Maskot (Background Putih)</option>
-                            <option value="infographic">📊 Infographic Carousel (4:5 Portrait)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
-                            <span>Size Ukuran Foto (Aspect Ratio)</span>
-                            <span id="sizeConstraintNote" class="text-emerald-400 text-[10px]">Auto-Optimized</span>
-                        </label>
-                        <select id="imgAspectSize" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2.5 text-xs text-slate-200">
-                            <option value="16_9">💻 16:9 Landscape - 1280x720 px (YouTube Thumbnail)</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
-                            <span>Jumlah Variasi Pose / Slide</span>
-                            <span class="text-emerald-400 font-semibold" id="poseCountLabel">3 Varian</span>
-                        </label>
-                        <div class="grid grid-cols-5 gap-1.5">
-                            <button type="button" onclick="setPoseCount(1)" id="poseBtn1" class="py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 font-medium hover:border-emerald-500 transition">1</button>
-                            <button type="button" onclick="setPoseCount(2)" id="poseBtn2" class="py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 font-medium hover:border-emerald-500 transition">2</button>
-                            <button type="button" onclick="setPoseCount(3)" id="poseBtn3" class="py-2 rounded-lg bg-emerald-600 border border-emerald-500 text-xs text-white font-bold shadow transition">3</button>
-                            <button type="button" onclick="setPoseCount(4)" id="poseBtn4" class="py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 font-medium hover:border-emerald-500 transition">4</button>
-                            <button type="button" onclick="setPoseCount(5)" id="poseBtn5" class="py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 font-medium hover:border-emerald-500 transition">5</button>
-                        </div>
-                        <input type="hidden" id="selectedPoseCount" value="3">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
-                            <span>Kunci Wajah / Karakter (Opsional)</span>
-                            <span class="text-emerald-400 text-[10px]">Upload Foto Wajah</span>
-                        </label>
-                        <div id="faceUploadBox" class="border-2 border-dashed border-emerald-700/60 hover:border-emerald-500 rounded-xl p-3 text-center cursor-pointer transition bg-slate-900/40">
-                            <i class="fa-solid fa-user-lock text-emerald-400 text-base mb-1"></i>
-                            <p class="text-[11px] text-slate-300 font-medium">Klik Upload Foto Wajah</p>
-                        </div>
-                        <div id="uploadedFaceName" class="text-[10px] text-emerald-400 mt-1.5 hidden"><i class="fa-solid fa-check-circle mr-1"></i> Wajah Terkunci: <span id="faceFileName">wajah.jpg</span></div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-medium text-slate-300 mb-1.5 flex justify-between">
-                            <span>Ketik Isi Kepala (Konsep Gambar)</span>
-                            <span class="text-emerald-400 text-[10px]">Auto Vision Context</span>
-                        </label>
-                        <textarea id="imgBrainDump" rows="4" class="w-full bg-slate-900 border border-slate-700/80 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-emerald-500" placeholder="Tuliskan konsep atau ide visual di sini..."></textarea>
-                    </div>
-
-                    <button onclick="runSmartImageGen()" class="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-semibold py-3 rounded-xl shadow-lg shadow-emerald-600/20 transition text-xs flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Smart Asset + Copywriting
-                    </button>
-                </div>
-            </section>
-
-            <section class="lg:col-span-8 space-y-4">
-                <div class="flex justify-between items-center bg-cardbg px-5 py-3 rounded-xl border border-bordercol">
-                    <h2 class="font-semibold text-xs text-slate-300 uppercase tracking-wider"><i class="fa-solid fa-photo-film text-emerald-400 mr-2"></i> Hasil Preview (<span id="resultPoseCount">3</span> Varian)</h2>
-                    <button onclick="alert('Mengunduh semua aset dan teks caption!')" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs px-3 py-1.5 rounded-lg border border-slate-700"><i class="fa-solid fa-download mr-1"></i> Download Semua</button>
-                </div>
-
-                <div id="smartResultContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div class="bg-cardbg rounded-2xl border border-bordercol p-4 space-y-3 shadow-md flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-center mb-2">
-                                <span class="text-[11px] font-bold bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded-md border border-emerald-500/30">Varian #01</span>
-                                <span class="text-[11px] text-slate-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">16:9 (1280x720)</span>
-                            </div>
-                            <!-- GAMBAR DENGAN FITUR LONG-PRESS / DOWNLOAD -->
-                            <div class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner group">
-                                <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80" alt="Thumbnail Varian 1" class="w-full h-full object-cover">
-                                <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                                    <a href="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1200&q=80" target="_blank" download="Thumbnail-01.jpg" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium shadow flex items-center gap-1.5">
-                                        <i class="fa-solid fa-download"></i> Simpan Gambar
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="space-y-2 mt-2">
-                            <p class="text-xs text-slate-300 font-medium">YouTube Thumbnail 1280x720 piksel dengan kontras tinggi. (Tekan lama gambar untuk download)</p>
-                            <button onclick="alert('Berhasil mengunduh aset!')" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs py-2 rounded-xl border border-slate-700 transition font-medium"><i class="fa-solid fa-check mr-1"></i> Download HD</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-        </div>
-
-    </main>
-
-    <!-- ================= HISTORY MODAL POPUP ================= -->
-    <div id="historyModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-cardbg border border-bordercol rounded-2xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button onclick="closeHistoryModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-sm bg-slate-900 p-2 rounded-xl border border-slate-800">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-500/20 text-indigo-400 p-3 rounded-xl border border-indigo-500/30">
-                    <i class="fa-solid fa-clock-rotate-left text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-sm text-white">Riwayat Project (History)</h3>
-                    <p class="text-[11px] text-slate-400">Daftar storyboard & aset yang pernah digenerate.</p>
-                </div>
-            </div>
-
-            <div id="historyListContainer" class="space-y-2.5 max-h-64 overflow-y-auto pr-1">
-                <div class="bg-slate-900 p-3 rounded-xl border border-slate-800 flex justify-between items-center">
-                    <div>
-                        <p class="text-xs font-medium text-white">Review Skincare Anti-Panas</p>
-                        <p class="text-[10px] text-slate-400">Affiliate • 5 Scene • 30 Detik • Baru saja</p>
-                    </div>
-                    <button onclick="alert('Memuat project tersimpan...')" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] px-3 py-1.5 rounded-lg transition font-medium">Buka</button>
-                </div>
-            </div>
-
-            <button onclick="closeHistoryModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2.5 rounded-xl font-medium transition border border-slate-700">
-                Tutup
-            </button>
-        </div>
-    </div>
-
-    <!-- ================= SUPPORT MODAL POPUP ================= -->
-    <div id="supportModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-cardbg border border-bordercol rounded-2xl max-w-md w-full p-6 space-y-5 shadow-2xl relative animate-in fade-in zoom-in duration-200">
-            <button onclick="closeSupportModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-sm bg-slate-900 p-2 rounded-xl border border-slate-800">
-                <i class="fa-solid fa-xmark"></i>
-            </button>
-            <div class="flex items-center space-x-3">
-                <div class="bg-amber-500/20 text-amber-400 p-3 rounded-xl border border-amber-500/30">
-                    <i class="fa-solid fa-headset text-lg"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-sm text-white">Pusat Bantuan & Support</h3>
-                    <p class="text-[11px] text-slate-400">Hubungi tim kami jika mengalami kendala.</p>
-                </div>
-            </div>
-
-            <div class="space-y-3 pt-2">
-                <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <p class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Contact Support (WhatsApp)</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-mono text-emerald-400 font-bold">+62 895-3155-5883</span>
-                        <a href="https://wa.me/6289531555883" target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium transition shadow flex items-center gap-1.5">
-                            <i class="fa-brands fa-whatsapp"></i> Chat
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <p class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Email Support</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-mono text-indigo-400 font-bold">konteninsupport@gmail.com</span>
-                        <a href="mailto:konteninsupport@gmail.com" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium transition shadow flex items-center gap-1.5">
-                            <i class="fa-solid fa-envelope"></i> Email
-                        </a>
-                    </div>
-                </div>
-
-                <div class="bg-slate-900 p-3.5 rounded-xl border border-slate-800 space-y-1">
-                    <p class="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Member Area Contact Admin</p>
-                    <div class="flex justify-between items-center">
-                        <span class="text-xs font-mono text-amber-400 font-bold">+62 895-3155-5883</span>
-                        <a href="https://wa.me/6289531555883?text=Halo%20Admin,%20saya%20member%20Kontenin%20AI%20ingin%20bertanya..." target="_blank" class="bg-amber-600 hover:bg-amber-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium transition shadow flex items-center gap-1.5">
-                            <i class="fa-brands fa-whatsapp"></i> Admin WA
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <button onclick="closeSupportModal()" class="w-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2.5 rounded-xl font-medium transition border border-slate-700">
-                Tutup
-            </button>
-        </div>
-    </div>
-
-    <script>
-        let currentStoryboardData = [];
-        let projectHistory = [];
-        let generatedCaptionText = "";
-        let uploadedImages = {};
-        let activeUploadType = '';
-
-        function switchTab(mode) {
-            const btnStoryboard = document.getElementById('btnStoryboard');
-            const btnImageOnly = document.getElementById('btnImageOnly');
-            const modeStoryboard = document.getElementById('modeStoryboard');
-            const modeImageOnly = document.getElementById('modeImageOnly');
-
-            if(mode === 'storyboard') {
-                btnStoryboard.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-indigo-600 text-white shadow";
-                btnImageOnly.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white";
-                modeStoryboard.classList.remove('hidden');
-                modeImageOnly.classList.add('hidden');
-            } else {
-                btnImageOnly.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition bg-emerald-600 text-white shadow";
-                btnStoryboard.className = "px-3 py-1.5 rounded-lg text-xs font-semibold transition text-slate-400 hover:text-white";
-                modeImageOnly.classList.remove('hidden');
-                modeStoryboard.classList.add('hidden');
-            }
-        }
-
-        function openSupportModal() { document.getElementById('supportModal').classList.remove('hidden'); }
-        function closeSupportModal() { document.getElementById('supportModal').classList.add('hidden'); }
-        function openHistoryModal() { document.getElementById('historyModal').classList.remove('hidden'); }
-        function closeHistoryModal() { document.getElementById('historyModal').classList.add('hidden'); }
-
-        function onMainCategoryChange() {
-            const mainCat = document.getElementById('mainCategory').value;
-            const subWrapper = document.getElementById('subCategoryWrapper');
-            const subSelect = document.getElementById('subCategorySelect');
-            const subLabel = document.getElementById('subCategoryLabel');
-            subSelect.innerHTML = '';
-
-            if (mainCat === 'animation') {
-                subWrapper.classList.remove('hidden');
-                subLabel.innerText = "Pilih Gaya Animasi";
-                subSelect.innerHTML = `
-                    <option value="animasi_2d">🎨 Animasi 2D (Flat & Motion Design Clean)</option>
-                    <option value="animasi_3d">🧸 Animasi 3D (Pixar / Disney Style)</option>
-                    <option value="anime">✨ Anime / Manga Style (Japanese Aesthetic)</option>
-                    <option value="stopmotion">🧱 Claymation / Stop Motion Style</option>
-                `;
-            } else if (mainCat === 'drama') {
-                subWrapper.classList.remove('hidden');
-                subLabel.innerText = "Pilih Genre Drama";
-                subSelect.innerHTML = `
-                    <option value="drama_tradisional">🏮 Cerita Tradisional & Legenda Nusantara (Latar Daerah Lokal)</option>
-                    <option value="drama_china">🇨🇳 Drama China (Vertical Short Drama / CEO & Plot Twist)</option>
-                    <option value="sinetron">🇮🇩 Sinetron Indonesia (Drama Keluarga & Konflik Emosional)</option>
-                `;
-            } else {
-                subWrapper.classList.add('hidden');
-            }
-        }
-
-        // Fungsionalitas Buka Galeri HP Asli
-        function uploadAsset(type) {
-            activeUploadType = type;
-            document.getElementById('hiddenGaleriInput').click();
-        }
-
-        function prosesFileGaleri(input) {
-            const file = input.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    uploadedImages[activeUploadType] = e.target.result;
-                    const labelId = activeUploadType === 'Karakter' ? 'lblKarakter' : (activeUploadType === 'Latar' ? 'lblLatar' : 'lblProduk');
-                    const el = document.getElementById(labelId);
-                    el.innerText = "Teranalisis ✓";
-                    el.className = "text-[9px] text-emerald-400 font-bold";
-                };
-                reader.readAsDataURL(file);
-            }
-        }
-
-        function onCategoryChange() {
-            const category = document.getElementById('imgCategory').value;
-            const sizeSelect = document.getElementById('imgAspectSize');
-            const note = document.getElementById('sizeConstraintNote');
-
-            sizeSelect.innerHTML = '';
-            if (category === 'thumbnail') {
-                sizeSelect.innerHTML = `<option value="16_9">💻 16:9 Landscape - 1280x720 px (YouTube Thumbnail)</option>`;
-                note.innerText = "Locked: 1280x720 px";
-            } else if (category === 'poster_story') {
-                sizeSelect.innerHTML = `<option value="9_16">📱 9:16 Vertical - 1080x1920 px (Instagram Story Poster)</option>`;
-                note.innerText = "Locked: 1080x1920 px";
-            } else if (category === 'linkedin') {
-                sizeSelect.innerHTML = `<option value="1_1">👔 1:1 Square - 1080x1080 px (Standard Profile)</option>`;
-                note.innerText = "Locked: 1:1 Square";
-            } else if (category === 'product') {
-                sizeSelect.innerHTML = `
-                    <option value="1_1">🖼️ 1:1 Square - 1080x1080 px (IG Square Feed)</option>
-                    <option value="4_5">📱 4:5 Portrait - 1080x1350 px (IG Portrait Feed)</option>
-                `;
-                note.innerText = "Pilihan Size Instagram";
-            } else if (category === 'character') {
-                sizeSelect.innerHTML = `<option value="1_1">👤 1:1 Square - Pure White Background (Mascot / Cut-out)</option>`;
-                note.innerText = "Locked: Pure White BG";
-            } else if (category === 'infographic') {
-                sizeSelect.innerHTML = `<option value="4_5">📊 4:5 Portrait - 1080x1350 px (Optimal Carousel Feed)</option>`;
-                note.innerText = "Locked: Carousel Portrait";
-            }
-        }
-
-        function setPoseCount(count) {
-            document.getElementById('selectedPoseCount').value = count;
-            document.getElementById('poseCountLabel').innerText = count + ' Varian';
-            for(let i=1; i<=5; i++) {
-                const btn = document.getElementById('poseBtn' + i);
-                if(i === count) {
-                    btn.className = "py-2 rounded-lg bg-emerald-600 border border-emerald-500 text-xs text-white font-bold shadow transition";
-                } else {
-                    btn.className = "py-2 rounded-lg bg-slate-900 border border-slate-700 text-xs text-slate-300 font-medium hover:border-emerald-500 transition";
+                    parts.push({
+                        inlineData: {
+                            mimeType: mimeType,
+                            data: base64Data
+                        }
+                    });
                 }
             }
         }
 
-        document.getElementById('faceUploadBox').addEventListener('click', function() {
-            const fileName = prompt("DEMO: Masukkan nama file foto wajah untuk Vision Lock:", "wajah_karakter.jpg");
-            if(fileName) {
-                document.getElementById('faceFileName').innerText = fileName;
-                document.getElementById('uploadedFaceName').classList.remove('hidden');
-            }
+        const promptText = `
+            Bertindaklah sebagai Sutradara AI dan Copywriting Profesional untuk konten ${mainCategory}.
+            Buatkan ${count} scene storyboard video berdurasi total ${durationTotal} detik berdasarkan ide berikut: "${text}".
+            Gaya bahasa Voiceover (VO) menggunakan nada: ${voStyle}.
+            Jika ada gambar referensi di atas, jadikan acuan visual utama.
+            Berikan output dalam format JSON murni berupa array tanpa teks pengantar markdown lainnya:
+            [
+              {
+                "scene": 1,
+                "timing": "0 - 5 Detik",
+                "visual_prompt": "Deskripsi visual gambar",
+                "voiceover": "Teks naskah voiceover"
+              }
+            ]
+        `;
+
+        parts.push({ text: promptText });
+
+        const geminiResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                contents: [{ parts: parts }]
+            })
         });
 
-        // STORYBOARD GENERATOR TERHUBUNG KE BACKEND VERCEL
-        async function runStoryboardGen() {
-            const text = document.getElementById('sbInput').value.trim();
-            const mainCategory = document.getElementById('mainCategory').value;
-            const count = parseInt(document.getElementById('sbSceneCount').value);
-            const durationTotal = parseInt(document.getElementById('sbDurationTotal').value);
-            const voStyle = document.getElementById('voStyle').value;
-            
-            if(!text) { 
-                alert('Silakan ketik isi kepala / alur cerita terlebih dahulu di kotak teks!'); 
-                return; 
-            }
-            
-            const container = document.getElementById('sbContainer');
-            container.innerHTML = `
-                <div class="col-span-2 py-16 text-center text-slate-400 bg-cardbg rounded-2xl border border-bordercol">
-                    <i class="fa-solid fa-spinner fa-spin text-3xl text-indigo-500 mb-3"></i>
-                    <p class="text-sm font-medium">Pelayan Toko memproses AI untuk ${count} scene (${durationTotal}s)...</p>
-                </div>
-            `;
-            
-            try {
-                const response = await fetch('/api/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        text, 
-                        count, 
-                        durationTotal, 
-                        voStyle, 
-                        mainCategory, 
-                        images: uploadedImages 
-                    })
-                });
+        const data = await geminiResponse.json();
 
-                const result = await response.json();
-                
-                if (result.success && Array.isArray(result.data)) {
-                    let html = '';
-                    currentStoryboardData = [];
-                    const sampleImages = [
-                        'https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=600&q=80',
-                        'https://images.unsplash.com/photo-1512496015851-a90fb38ba796?auto=format&fit=crop&w=600&q=80',
-                        'https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&w=600&q=80',
-                        'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80',
-                        'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80'
-                    ];
-
-                    result.data.forEach((item, index) => {
-                        let i = item.scene || (index + 1);
-                        let imgUrl = sampleImages[(i - 1) % sampleImages.length];
-                        let timing = item.timing || `Scene ${i}`;
-                        let visualDesc = item.visual_prompt || item.description || text;
-                        let voText = item.voiceover || "Naskah voiceover siap digunakan.";
-
-                        currentStoryboardData.push({ scene: i, timing: timing, description: visualDesc, voiceover: voText });
-
-                        html += `
-                            <div class="bg-cardbg rounded-2xl border border-bordercol p-4 space-y-3 shadow-md flex flex-col justify-between">
-                                <div>
-                                    <div class="flex justify-between items-center mb-2">
-                                        <span class="text-[11px] font-bold bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded-md border border-indigo-500/30">Shot 0${i}</span>
-                                        <span class="text-[11px] text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800"><i class="fa-solid fa-clock text-[10px] mr-1"></i> ${timing}</span>
-                                    </div>
-                                    <div class="aspect-video bg-slate-900 rounded-xl overflow-hidden relative border border-slate-800 flex items-center justify-center shadow-inner group">
-                                        <img src="${imgUrl}" alt="Storyboard Shot ${i}" class="w-full h-full object-cover">
-                                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                                            <a href="${imgUrl}" target="_blank" download="Shot-0${i}.jpg" class="bg-indigo-600 hover:bg-indigo-500 text-white text-[11px] px-3 py-1.5 rounded-lg font-medium shadow flex items-center gap-1.5">
-                                                <i class="fa-solid fa-download"></i> Simpan Gambar
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="space-y-2 mt-2">
-                                    <p class="text-xs text-slate-300 font-medium leading-relaxed">${visualDesc}</p>
-                                    <div class="bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1.5">
-                                        <div class="flex justify-between items-center">
-                                            <span class="text-indigo-400 font-bold"><i class="fa-solid fa-microphone mr-1"></i> Voiceover:</span>
-                                            <button onclick="navigator.clipboard.writeText('${voText.replace(/'/g, "\\'")}'); alert('Teks VO Scene 0${i} berhasil disalin!');" class="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 px-2 py-0.5 rounded transition"><i class="fa-solid fa-copy mr-1"></i> Copy</button>
-                                        </div>
-                                        <p class="text-slate-300 italic">"${voText}"</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `;
-                    });
-                    container.innerHTML = html;
-                    document.getElementById('sbCountDisplay').innerText = count;
-
-                    generatedCaptionText = `🔥 Wah parah sih, kalian wajib tahu hal ini!\n\nPenjelasan lengkap tentang ${text}. Dijamin langsung paham dan hasilnya maksimal banget!\n\n👇 Cek detailnya dan yuk cobain sekarang juga!\n\n#konteninai #videocontent #affiliatemarketing #tiktokshop #reelsinstagram #contentcreator #fyp #tipscontent`;
-                    document.getElementById('generatedCaptionContent').innerText = generatedCaptionText;
-                    document.getElementById('captionBoxWrapper').classList.remove('hidden');
-
-                    projectHistory.unshift({ title: text.substring(0, 30) + '...', info: `${count} Scene • ${durationTotal}s`, date: 'Baru saja' });
-                } else {
-                    throw new Error('Gagal dari server');
-                }
-            } catch (error) {
-                console.error(error);
-                container.innerHTML = `<div class="col-span-2 py-10 text-center text-red-400 bg-red-950/30 rounded-2xl border border-red-900 text-xs">Gagal terhubung ke Pelayan Toko. Periksa koneksi atau API Key Vercel kamu!</div>`;
-            }
+        if (data.error) {
+            console.error("Gemini API Error:", data.error);
+            return res.status(500).json({ error: data.error.message || 'Gagal dari server Gemini.' });
         }
 
-        function copyFullCaption() {
-            if(!generatedCaptionText) return;
-            navigator.clipboard.writeText(generatedCaptionText);
-            alert('Caption & Viral Hashtags berhasil disalin ke clipboard!');
-        }
+        const rawText = data.candidates[0].content.parts[0].text.trim();
+        const cleanJsonText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+        const storyboardArray = JSON.parse(cleanJsonText);
 
-        function exportScriptTxt() {
-            if(currentStoryboardData.length === 0) { alert('Belum ada storyboard yang digenerate!'); return; }
-            const voStyle = document.getElementById('voStyle').value;
-            const durationTotal = document.getElementById('sbDurationTotal').value;
+        return res.status(200).json({ success: true, data: storyboardArray });
 
-            let fileContent = `========================================\n`;
-            fileContent += ` KONTENIN AI - SCRIPT & TIMING REPORT\n`;
-            fileContent += ` Total Durasi: ${durationTotal} Detik | Gaya VO: ${voStyle.toUpperCase()}\n`;
-            fileContent += `========================================\n\n`;
-
-            currentStoryboardData.forEach(item => {
-                fileContent += `[SHOT 0${item.scene}] | Timing: ${item.timing}\n`;
-                fileContent += `Visual: ${item.description}\n`;
-                fileContent += `Voiceover: ${item.voiceover}\n`;
-                fileContent += `----------------------------------------\n\n`;
-            });
-
-            if(generatedCaptionText) {
-                fileContent += `=== AUTO CAPTION & HASHTAGS ===\n${generatedCaptionText}\n`;
-            }
-
-            const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Skrip-Storyboard-${Date.now()}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
-
-        function runSmartImageGen() {
-            alert("Smart Image Generator berjalan (Demo)");
-        }
-    </script>
-</body>
-</html>
+    } catch (error) {
+        console.error("Server Error:", error);
+        return res.status(500).json({ error: error.message || 'Gagal memproses AI generator di server.' });
+    }
+}
